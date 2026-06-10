@@ -1,0 +1,12 @@
+{
+  "name": "Coast Run GP",
+  "short_name": "CoastRunGP",
+  "description": "Retro pseudo-3D motorcycle road racing.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d1018",
+  "theme_color": "#0d1018",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
