@@ -9,6 +9,7 @@ let crashing = false, crashTimer = 0, crashDur = 2, crashRot = 0, crashDir = 1, 
 let parts = [];
 let rivals = [], traffic = [];
 let keyL = false, keyR = false, keyB = false, keyU = false;
+let cheatBuf = '', cheatT = 0;
 
 function B() { return BIKES[curBike]; }
 
@@ -42,7 +43,11 @@ function reset() {
   const tt = ['car', 'car', 'truck', 'car', 'bus', 'car', 'truck', 'car', 'car', 'bus'];
   let tc = ['#5F5E5A', '#185FA5', '#9AB0BC', '#72243E', '#EF9F27', '#0F6E56', '#B4B2A9', '#444441', '#993C1D', '#EF9F27'];
   if (T.taxi) tc = ['#EFC727', '#EFC727', '#9AB0BC', '#EFC727', '#E24B4A', '#EFC727', '#B4B2A9', '#EFC727', '#185FA5', '#EFC727'];
-  for (let i = 0; i < nt; i++) traffic.push({ z: trackLen * (0.08 + i * 0.84 / nt), off: [-0.5, 0, 0.5][i % 3], speed: maxSpeed * (0.2 + (i % 4) * 0.045), type: tt[i % 10], col: tc[i % 10], cw: tt[i % 10] === 'car' ? 0.26 : 0.33 });
+  const sbusAt = Math.floor(nt / 2); // exactly one Greisen school bus every run
+  for (let i = 0; i < nt; i++) {
+    const ty = i === sbusAt ? 'sbus' : tt[i % 10];
+    traffic.push({ z: trackLen * (0.08 + i * 0.84 / nt), off: [-0.5, 0, 0.5][i % 3], speed: maxSpeed * (0.2 + (i % 4) * 0.045), type: ty, col: tc[i % 10], cw: ty === 'car' ? 0.26 : 0.33 });
+  }
 }
 
 loadCareer();
@@ -78,6 +83,14 @@ function moveSel(dir) {
 }
 
 addEventListener('keydown', e => {
+  if (e.key && e.key.length === 1) {
+    cheatBuf = (cheatBuf + e.key.toLowerCase()).slice(-7);
+    if (cheatBuf === 'cheater') {
+      owned = [0, 1, 2, 3, 4, 5, 6, 7]; unlockedT = [0, 1, 2, 3, 4, 5, 6, 7];
+      lives = 5; cheatT = 3.5; saveCareer();
+      try { initAudio(); winJingle(); } catch (err) { }
+    }
+  }
   if (state === 'ready') {
     if (e.code === 'ArrowLeft') { moveSel(-1); e.preventDefault(); return; }
     if (e.code === 'ArrowRight') { moveSel(1); e.preventDefault(); return; }
@@ -168,7 +181,7 @@ function doCrash(side) {
   crashRot = 0; crashDir = side; flashT = 0.35; invulnT = 0; fell = false;
   crashSnd();
   spawnParts(14, '#FAC775', 360, 220);
-  spawnParts(10, '#9a9a9a', 220, 120);
+  spawnParts(12, '#D2382E', 240, 160);
 }
 
 // Armor (the hog) absorbs a crash as a stagger instead
@@ -203,6 +216,7 @@ function update(dt) {
   const pos = position % trackLen;
   const pSeg = segs[Math.floor((pos + playerZ) / segLen) % N];
   if (flashT > 0) flashT -= dt;
+  if (cheatT > 0) cheatT -= dt;
   if (bumpT > 0) bumpT -= dt;
   if (staggerT > 0) staggerT -= dt;
   for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 480 * dt; }
@@ -237,7 +251,7 @@ function update(dt) {
         if (prog * 1.7 >= 1 && Math.random() < 0.5) parts.push({
           x: W / 2 - crashDir * prog * 165 + (Math.random() - 0.5) * 36, y: H - 28,
           vx: -crashDir * (50 + Math.random() * 140), vy: -Math.random() * 130 - 40,
-          life: 0.4 + Math.random() * 0.4, r: 2 + Math.random() * 3, col: '#b0a894' });
+          life: 0.4 + Math.random() * 0.4, r: 2 + Math.random() * 3, col: Math.random() < 0.6 ? '#D2382E' : '#8E1414' });
       }
       position += speed * dt;
       if (crashTimer <= 0) {
@@ -415,8 +429,8 @@ function render() {
       cx.fillRect(0, p2.y, W, yb - p2.y);
     }
     quad(p1.x, p1.w, p1.y, p2.x, p2.w, p2.y, alt ? rdA : rdB);
-    quad(p1.x - p1.w * 1.06, p1.w * 0.06, p1.y, p2.x - p2.w * 1.06, p2.w * 0.06, p2.y, alt ? '#D84A3A' : '#F2F2F2');
-    quad(p1.x + p1.w * 1.06, p1.w * 0.06, p1.y, p2.x + p2.w * 1.06, p2.w * 0.06, p2.y, alt ? '#D84A3A' : '#F2F2F2');
+    quad(p1.x - p1.w * 1.06, p1.w * 0.045, p1.y, p2.x - p2.w * 1.06, p2.w * 0.045, p2.y, laneC);
+    quad(p1.x + p1.w * 1.06, p1.w * 0.045, p1.y, p2.x + p2.w * 1.06, p2.w * 0.045, p2.y, laneC);
     if (alt) quad(p1.x, p1.w * 0.015, p1.y, p2.x, p2.w * 0.015, p2.y, laneC);
     if (s.hz) {
       const hx1 = p1.x + s.hz.o * p1.w, hx2 = p2.x + s.hz.o * p2.w, hy = (p1.y + p2.y) / 2, hh = Math.max(1.5, (p1.y - p2.y) * 0.42);
@@ -461,6 +475,7 @@ function render() {
           if (v.kind === 'moto') { const sw = w0 * 0.17; if (sw > 1.5) drawMoto(sx, sy, sw, v.o.col, Math.sin(raceT + v.o.ph) * 0.2, false); }
           else if (v.kind === 'car') { const sw = w0 * 0.3; if (sw > 2) drawCar(sx, sy, sw, v.o.col); }
           else if (v.kind === 'truck') { const sw = w0 * 0.34; if (sw > 2) drawTruck(sx, sy, sw, v.o.col); }
+          else if (v.kind === 'sbus') { const sw = w0 * 0.34; if (sw > 2) drawSchoolBus(sx, sy, sw); }
           else { const sw = w0 * 0.34; if (sw > 2) drawBus(sx, sy, sw, v.o.col); }
         }
       }
@@ -506,6 +521,13 @@ function render() {
 
 function drawHud() {
   cx.textBaseline = 'middle';
+  if (cheatT > 0) {
+    cx.fillStyle = 'rgba(20,24,32,0.85)'; rr(W / 2 - 210, H * 0.42, 420, 54, 10); cx.fill();
+    cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace'; cx.textAlign = 'center';
+    cx.fillText('CHEATER MODE', W / 2, H * 0.42 + 20);
+    cx.font = '12px monospace'; cx.fillStyle = '#9FE1CB';
+    cx.fillText('all bikes + all tracks unlocked', W / 2, H * 0.42 + 40);
+  }
   if (state === 'race' || state === 'count') {
     cx.fillStyle = 'rgba(20,24,32,0.72)';
     rr(12, 12, 150, 32, 8); cx.fill(); rr(W - 122, 12, 110, 32, 8); cx.fill(); rr(W / 2 - 62, 12, 124, 32, 8); cx.fill();

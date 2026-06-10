@@ -67,8 +67,9 @@ Mystery). Indices 0–3 start unlocked; 4–7 unlock via podium reward.
 Mystery Run (index 3) rolls geometry, hills, sky, traffic count, and 3–5 biome zones
 (forest/desert/coast) with `Math.random()` at `buildCourse()` time. No seed by design.
 
-Generator etiquette (keep these): no potholes/dirt/animals on hairpins (|curve| >= 5), chevron
-signs auto-placed on hairpin outsides, dirt never on cliff segments.
+Generator etiquette (keep these): no potholes/dirt/animals on hairpins (|curve| >= 5), dirt
+never on cliff segments. Chevron signs were removed June 2026 (Tim: street racing look — plain
+white fog lines on road edges, no rumble strips, no turn arrows).
 
 ## Bikes (js/data.js BIKES[], drawn in sprites.js drawPlayerBike)
 
@@ -78,6 +79,14 @@ crash recovery time; `armor` = crashes absorbed per race as a stagger (the hog l
 `bars[]` is display-only. Four visual kinds: cafe, enduro, hog, rice. Four engine voices in
 `SND` (audio.js): the hog is low with a chug LFO, enduro is blatty square waves, rice is a high
 whine, cafe is the mid baseline.
+
+## Traffic, cheats, gore
+
+Every run spawns exactly one GREISEN school bus mid-pack (`sbusAt` in reset(); full-grid
+sprite PX_SBUS so the lettering doesn't mirror — the name matters to Tim, don't change it).
+Typing CHEATER on any screen unlocks all bikes + tracks and refills lives (testing aid;
+persists to the save — R on course select resets). Crash particles: gold sparks trail the
+bike, RED blood (not dust) sprays where the rider lands, per Tim.
 
 ## Game state machine (js/main.js)
 

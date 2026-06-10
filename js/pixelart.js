@@ -865,3 +865,29 @@ const PX_SIGN = [
   '...ksk...',
   '...ksk...'
 ];
+
+// ============================ GREISEN SCHOOL BUS (rear, full grid — text must not mirror) ============================
+const PX_SBUS = [
+  '..kkkkkkkkkkkkkkkkkkkkkkkkkkkk..',
+  '.kooooooooooooooooooooooooooook.',
+  '.kkkkokkookkkokkkokkkokkkokokok.',
+  '.kkoookokokooookookoookoookkkok.',
+  '.kkokokkookkoookookkkokkookokok.',
+  '.kkokokokokooookooookokoookokok.',
+  '.kkkkokokokkkokkkokkkokkkokokok.',
+  '.kooooooooooooooooooooooooooook.',
+  '.koggggkggggkggggkggggkggggggok.',
+  '.koggggkggggkggggkggggkggggggok.',
+  '.koggggkggggkggggkggggkggggggok.',
+  '.kooooooooooooooooooooooooooook.',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  '.kooooooooooooooooooooooooooook.',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  '.kooooooooooooooooooooooooooook.',
+  '.kxxkooooooooooooooookwwwkkxxk.',
+  '.kssssssssssssssssssssssssssssk.',
+  '.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.',
+  '..kttkttk..............kttkttk..',
+  '..kttkttk..............kttkttk..',
+  '...kk.kk................kk.kk...'
+];

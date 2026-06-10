@@ -21,7 +21,7 @@ function quad(x1, w1, y1, x2, w2, y2, col) {
 function drawMoto(bx, by, w, col, ln, brake) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(bx, by + 2, w * 0.6, w * 0.11, 0, 0, 7); cx.fill();
   const img = pxSprite('rival', PX_RIVAL, { 1: col, 2: hexMix(col, 0.55), r: brake ? '#FF3B30' : '#8a3434' }, true);
-  pxBlit(img, bx, by, w / 9.5, ln * 0.4);
+  pxBlit(img, bx, by, w / 17.8, ln * 0.4);
 }
 
 // Player bike (rear view) — pixel sprites per kind + tier, from js/pixelart.js
@@ -88,6 +88,12 @@ function drawTruck(x, y, w, col) {
 function drawBus(x, y, w, col) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('bus', PX_BUS, { 1: col, 2: hexMix(col, 0.6) }, true), x, y, w / 20, 0);
+}
+
+// The Greisen school bus — one per run, full-grid sprite so the name reads.
+function drawSchoolBus(x, y, w) {
+  cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.6, w * 0.1, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('sbus', PX_SBUS, null, false), x, y, w / 24, 0);
 }
 
 function drawDeer(x, y, w) {

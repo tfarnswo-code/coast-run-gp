@@ -71,8 +71,7 @@ function bjBuild() {
 function upDec(deerMod) {
   for (let i = 0; i < N; i++) {
     const s = segs[i];
-    if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-    else if (i % 13 === 5) s.spr = { t: (i % 26 === 5) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (1.55 + (i * 7 % 6) / 6) };
+    if (i % 13 === 5) s.spr = { t: (i % 26 === 5) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (1.55 + (i * 7 % 6) / 6) };
     else if (i % 7 === 0) s.spr = { t: (i % 14 === 0) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (2.5 + (i * 7 % 10) / 4) };
     else if (i % 11 === 0) s.spr = { t: 'bush', o: (i % 2 ? -1 : 1) * (2.1 + (i * 3 % 6) / 4) };
     if (Math.abs(s.curve) < 5 && i % 89 === 17) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
@@ -83,8 +82,7 @@ function upDec(deerMod) {
 function bsDec() {
   for (let i = 0; i < N; i++) {
     const s = segs[i];
-    if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-    else if (i % 9 === 2) s.spr = { t: (i % 18 === 2) ? 'pine' : 'tree', o: 1.7 + (i * 5 % 8) / 5 };
+    if (i % 9 === 2) s.spr = { t: (i % 18 === 2) ? 'pine' : 'tree', o: 1.7 + (i * 5 % 8) / 5 };
     else if (i % 17 === 5) s.spr = { t: 'rock', o: 1.5 + (i * 3 % 5) / 5 };
     if (Math.abs(s.curve) < 5 && i % 127 === 40) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
   }
@@ -92,8 +90,7 @@ function bsDec() {
 function bjDec(potMod, cowMod, runs, maxRun) {
   for (let i = 0; i < N; i++) {
     const s = segs[i];
-    if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-    else if (i % 9 === 4) s.spr = { t: 'cactus', o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
+    if (i % 9 === 4) s.spr = { t: 'cactus', o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
     else if (i % 13 === 6) s.spr = { t: 'rock', o: (i % 2 ? -1 : 1) * (1.6 + (i * 5 % 6) / 5) };
     else if (i % 7 === 1) s.spr = { t: 'shrub', o: (i % 2 ? 1 : -1) * (2.0 + (i * 3 % 6) / 4) };
     if (Math.abs(s.curve) < 5 && i % potMod === 9 % potMod) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
@@ -141,24 +138,21 @@ const THEMES = [
         const s = segs[i];
         if (b === 0) { // forest zone
           s.cA = '#6AAE4E'; s.cB = '#5F9F45';
-          if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-          else if (i % 13 === 5) s.spr = { t: (i % 26 === 5) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (1.55 + (i * 7 % 6) / 6) };
+          if (i % 13 === 5) s.spr = { t: (i % 26 === 5) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (1.55 + (i * 7 % 6) / 6) };
           else if (i % 7 === 0) s.spr = { t: 'tree', o: (i % 2 ? 1 : -1) * (2.5 + (i * 7 % 10) / 4) };
           else if (i % 11 === 0) s.spr = { t: 'bush', o: (i % 2 ? -1 : 1) * (2.1 + (i * 3 % 6) / 4) };
           if (Math.abs(s.curve) < 5 && i % 89 === 17) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
           if (i % 241 === 60 && Math.abs(s.curve) < 4) s.animal = { t: 'deer', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
         } else if (b === 1) { // desert zone
           s.cA = '#D9BC85'; s.cB = '#CFB279'; s.dirtC = 'rgba(110,80,48,0.9)';
-          if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-          else if (i % 9 === 4) s.spr = { t: 'cactus', o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
+          if (i % 9 === 4) s.spr = { t: 'cactus', o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
           else if (i % 13 === 6) s.spr = { t: 'rock', o: (i % 2 ? -1 : 1) * (1.6 + (i * 5 % 6) / 5) };
           else if (i % 7 === 1) s.spr = { t: 'shrub', o: (i % 2 ? 1 : -1) * (2.0 + (i * 3 % 6) / 4) };
           if (Math.abs(s.curve) < 5 && i % 41 === 9) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
           if (i % 283 === 100 && Math.abs(s.curve) < 4) s.animal = { t: 'cow', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
         } else { // coast zone — cliff on the left, fatal
           s.cA = '#A3AD6E'; s.cB = '#98A263'; s.clf = true;
-          if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-          else if (i % 9 === 2) s.spr = { t: 'pine', o: 1.7 + (i * 5 % 8) / 5 };
+          if (i % 9 === 2) s.spr = { t: 'pine', o: 1.7 + (i * 5 % 8) / 5 };
           else if (i % 17 === 5) s.spr = { t: 'rock', o: 1.5 + (i * 3 % 5) / 5 };
           if (Math.abs(s.curve) < 5 && i % 127 === 40) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
         }
@@ -190,8 +184,7 @@ const THEMES = [
     dec: function () {
       for (let i = 0; i < N; i++) {
         const s = segs[i];
-        if (Math.abs(s.curve) >= 5 && i % 6 === 0) s.spr = { t: 'sign', o: -Math.sign(s.curve) * 1.6, d: Math.sign(s.curve) };
-        else if (i % 7 === 2) s.spr = { t: 'lamp', o: (i % 14 === 2 ? -1.35 : 1.35) };
+        if (i % 7 === 2) s.spr = { t: 'lamp', o: (i % 14 === 2 ? -1.35 : 1.35) };
         if (Math.abs(s.curve) < 5 && i % 29 === 5) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
       }
     } }
