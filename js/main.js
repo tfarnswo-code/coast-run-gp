@@ -1,6 +1,7 @@
 // Coast Run GP — game state, career persistence, input, physics, render loop.
 
-let state = 'ready', speed = 0, position = 0, playerN = 0;
+let state = 'title', speed = 0, position = 0, playerN = 0;
+let paused = false;
 let raceT = 0, lapStartT = 0, curLap = 0, lapTimes = [], cd = 0, lastCd = 4, bgShift = 0, lean = 0, finalRank = 13, bounce = 0;
 let lives = 3, podiumCols = [], conf = [], bonusLife = false;
 let owned = [0], curBike = 0, selG = 0, pendingReward = false, rewardOpts = [], selR = 0, armorLeft = 0, staggerT = 0;
@@ -91,15 +92,21 @@ addEventListener('keydown', e => {
       try { initAudio(); winJingle(); } catch (err) { }
     }
   }
+  // P pauses mid-race; Q saves and exits to the title (mid-race = forfeit, no penalty no reward)
+  if ((state === 'race' || state === 'count') && e.code === 'KeyP') { paused = !paused; return; }
+  if (e.code === 'KeyQ' && (state === 'garage' || state === 'ready' || state === 'race' || state === 'count')) {
+    paused = false; crashing = false; speed = 0; saveCareer(); state = 'title'; return;
+  }
   if (state === 'ready') {
     if (e.code === 'ArrowLeft') { moveSel(-1); e.preventDefault(); return; }
     if (e.code === 'ArrowRight') { moveSel(1); e.preventDefault(); return; }
     if (e.code === 'KeyR') { resetCareer(); buildCourse(sel); reset(); return; }
+    if (e.code === 'KeyB') { state = 'garage'; e.preventDefault(); return; }
   }
   if (state === 'garage') {
     if (e.code === 'ArrowLeft') { selG = (selG + owned.length - 1) % owned.length; e.preventDefault(); return; }
     if (e.code === 'ArrowRight') { selG = (selG + 1) % owned.length; e.preventDefault(); return; }
-    if (e.code === 'KeyB') { state = 'ready'; e.preventDefault(); return; }
+    if (e.code === 'KeyB') { state = 'title'; e.preventDefault(); return; }
   }
   if (state === 'reward' && rewardOpts.length) {
     if (e.code === 'ArrowLeft') { selR = (selR + rewardOpts.length - 1) % rewardOpts.length; e.preventDefault(); return; }
@@ -111,8 +118,9 @@ addEventListener('keydown', e => {
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { keyU = true; e.preventDefault(); }
   if (e.code === 'KeyM') muted = !muted;
   if (e.code === 'Enter' || e.code === 'Space') {
-    if (state === 'ready') { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); }
-    else if (state === 'garage') { curBike = owned[selG]; saveCareer(); startRace(); }
+    if (state === 'title') { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); }
+    else if (state === 'ready') { startRace(); }
+    else if (state === 'garage') { curBike = owned[selG]; saveCareer(); state = 'ready'; }
     else if (state === 'over') { state = pendingReward ? 'reward' : 'ready'; }
     else if (state === 'reward') { claimReward(rewardOpts[selR]); }
     else if (state === 'dead') { resetCareer(); state = 'ready'; buildCourse(sel); reset(); }
@@ -130,6 +138,7 @@ addEventListener('blur', () => { keyL = keyR = keyB = keyU = false; });
 cv.addEventListener('click', e => {
   const r = cv.getBoundingClientRect();
   const mx = (e.clientX - r.left) * W / r.width, my = (e.clientY - r.top) * H / r.height;
+  if (state === 'title') { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); return; }
   if (state === 'over') { state = pendingReward ? 'reward' : 'ready'; return; }
   if (state === 'dead') { resetCareer(); state = 'ready'; buildCourse(sel); reset(); return; }
   if (state === 'ready') {
@@ -137,7 +146,7 @@ cv.addEventListener('click', e => {
       const gx = 30 + (i % 4) * 160, gy = 86 + Math.floor(i / 4) * 128;
       if (mx >= gx && mx <= gx + 150 && my >= gy && my <= gy + 118) {
         if (unlockedT.indexOf(i) < 0) return;
-        if (sel === i) { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); }
+        if (sel === i) { startRace(); }
         else { sel = i; buildCourse(sel); reset(); }
         return;
       }
@@ -148,7 +157,7 @@ cv.addEventListener('click', e => {
     for (let i = 0; i < owned.length; i++) {
       const gx = 30 + (i % 4) * 160, gy = 78 + Math.floor(i / 4) * 108;
       if (mx >= gx && mx <= gx + 150 && my >= gy && my <= gy + 98) {
-        if (selG === i) { curBike = owned[selG]; saveCareer(); startRace(); }
+        if (selG === i) { curBike = owned[selG]; saveCareer(); state = 'ready'; }
         else selG = i;
         return;
       }
@@ -213,6 +222,7 @@ function finishRace() {
 }
 
 function update(dt) {
+  if (paused) { audioTick(); return; }
   const pos = position % trackLen;
   const pSeg = segs[Math.floor((pos + playerZ) / segLen) % N];
   if (flashT > 0) flashT -= dt;
@@ -530,14 +540,14 @@ function drawHud() {
   }
   if (state === 'race' || state === 'count') {
     cx.fillStyle = 'rgba(20,24,32,0.72)';
-    rr(12, 12, 150, 32, 8); cx.fill(); rr(W - 122, 12, 110, 32, 8); cx.fill(); rr(W / 2 - 62, 12, 124, 32, 8); cx.fill();
+    rr(12, 12, 150, 32, 8); cx.fill(); rr(W - 122, 12, 110, 32, 8); cx.fill(); rr(W / 2 - 62, 12, 170, 32, 8); cx.fill();
     cx.fillStyle = '#fff'; cx.font = '500 14px monospace'; cx.textAlign = 'left';
     cx.fillText('Lap ' + Math.min(curLap + 1, 3) + '/3   ' + fmt(raceT), 24, 29);
     cx.textAlign = 'right';
     const rank = 1 + rivals.filter(r => r.z > position).length;
     cx.fillText('Pos ' + rank + '/13', W - 24, 29);
     cx.font = '11px monospace'; cx.textAlign = 'left'; cx.fillText('Lives', W / 2 - 50, 29);
-    for (let i = 0; i < Math.max(3, lives); i++) drawLifeIcon(W / 2 - 6 + i * 22, 28, i < lives);
+    for (let i = 0; i < 5; i++) drawLifeIcon(W / 2 - 6 + i * 22, 28, i < lives);
     cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(W - 152, H - 52, 140, 40, 8); cx.fill();
     cx.fillStyle = '#fff'; cx.font = '500 22px monospace'; cx.textAlign = 'right';
     cx.fillText(Math.round(speed / maxSpeed * 280), W - 82, H - 32);
@@ -560,30 +570,54 @@ function drawHud() {
       cx.fillText('Shrugged it off!', W / 2, H * 0.32);
     }
   }
+  if (paused && (state === 'race' || state === 'count')) {
+    cx.fillStyle = 'rgba(15,18,26,0.6)'; cx.fillRect(0, 0, W, H);
+    cx.textAlign = 'center'; cx.fillStyle = '#fff'; cx.font = '500 40px monospace';
+    cx.fillText('PAUSED', W / 2, H * 0.42);
+    cx.fillStyle = '#FAC775'; cx.font = '500 14px monospace';
+    cx.fillText('p: resume · q: save & exit (forfeits the race)', W / 2, H * 0.54);
+  }
   if (state === 'count') {
     cx.textAlign = 'center'; cx.font = '500 64px monospace';
     cx.fillStyle = T.night ? '#fff' : 'rgba(20,24,32,0.85)';
     const n = Math.ceil(cd);
     cx.fillText(cd > 0 ? String(n) : 'GO!', W / 2, H * 0.35);
   }
+  if (state === 'title') {
+    cx.fillStyle = 'rgba(15,18,26,0.78)'; cx.fillRect(0, 0, W, H);
+    cx.textAlign = 'center'; cx.fillStyle = '#fff';
+    cx.font = '700 46px monospace'; cx.fillText('COAST RUN GP', W / 2, H * 0.22);
+    cx.fillStyle = '#B4B2A9'; cx.font = '13px monospace';
+    cx.fillText('a motorcycle road racing game', W / 2, H * 0.22 + 32);
+    drawBikeSide(W / 2, H * 0.66, 210, B());
+    cx.fillStyle = '#B4B2A9'; cx.font = '12px monospace';
+    cx.fillText(B().name + ' · bikes ' + owned.length + '/8 · tracks ' + unlockedT.length + '/8', W / 2, H * 0.72);
+    cx.font = '11px monospace'; cx.textAlign = 'right'; cx.fillText('Lives', W - 110, 28);
+    for (let i = 0; i < 5; i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
+    cx.textAlign = 'center';
+    if (Math.floor(performance.now() / 600) % 2 === 0) {
+      cx.fillStyle = '#FAC775'; cx.font = '500 18px monospace';
+      cx.fillText('PRESS ENTER TO START', W / 2, H * 0.86);
+    }
+  }
   if (state === 'ready') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 24px monospace'; cx.fillText('Coast Run GP', W / 2, 30);
-    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Choose your course · tracks unlocked: ' + unlockedT.length + '/8 · bikes: ' + owned.length + '/8', W / 2, 56);
+    cx.font = '500 24px monospace'; cx.fillText('Choose your race', W / 2, 30);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Riding the ' + B().name + ' · tracks unlocked: ' + unlockedT.length + '/8', W / 2, 56);
     cx.font = '11px monospace'; cx.textAlign = 'right'; cx.fillStyle = '#B4B2A9'; cx.fillText('Lives', W - 110, 28);
-    for (let i = 0; i < Math.max(3, lives); i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
+    for (let i = 0; i < 5; i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
     for (let i = 0; i < THEMES.length; i++) {
       drawCourseCard(i, 30 + (i % 4) * 160, 86 + Math.floor(i / 4) * 128);
     }
     cx.fillStyle = '#FAC775'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
-    cx.fillText('← → choose · enter for the garage · any finish = +1 life · podium = bonus reward', W / 2, H - 20);
+    cx.fillText('← → choose · enter: race · b: garage · q: save & exit · any finish = +1 life', W / 2, H - 20);
   }
   if (state === 'garage') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
     cx.font = '500 24px monospace'; cx.fillText('Garage', W / 2, 32);
-    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Racing ' + T.name + ' — pick your ride', W / 2, 56);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Pick your ride · enter: choose race · b: title · q: save & exit', W / 2, 56);
     for (let i = 0; i < owned.length; i++) {
       const bk = BIKES[owned[i]];
       const gx = 30 + (i % 4) * 160, gy = 78 + Math.floor(i / 4) * 108;
@@ -602,7 +636,7 @@ function drawHud() {
     cx.fillText(sb.fl + (sb.armor ? ' · absorbs ' + sb.armor + ' crash' + (sb.armor > 1 ? 'es' : '') + ' per race' : ''), 50, H - 60);
     drawStatBars(sb, 250, H - 76);
     cx.fillStyle = '#FAC775'; cx.font = '500 12px monospace'; cx.textAlign = 'left';
-    cx.fillText('enter: race · b: back', 50, H - 32);
+    cx.fillText('enter: choose race', 50, H - 32);
   }
   if (state === 'reward') {
     cx.fillStyle = 'rgba(15,18,26,0.88)'; cx.fillRect(0, 0, W, H);

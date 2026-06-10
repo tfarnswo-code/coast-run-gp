@@ -91,7 +91,7 @@ function audioTick() {
     eng.o1.type = sc.t1; eng.o2.type = sc.t2;
     eng.f.frequency.value = sc.flt; eng.snd = B().snd;
   }
-  const racing = state === 'race';
+  const racing = state === 'race' && !paused;
   const sp = racing ? speed / (maxSpeed * B().ts) : 0;
   const gear = Math.min(5, Math.floor(sp * 6));
   const rf = Math.min(1, sp * 6 - gear);
