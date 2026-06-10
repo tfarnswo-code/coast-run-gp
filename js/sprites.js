@@ -32,11 +32,47 @@ function drawPlayerBike(bx, by, w, bk, ln, brake) {
   pxBlit(img, bx, by, w / 21, ln * 0.4);
 }
 
-// Player bike (side view) — garage and reward cards. w = target drawn width.
+// Player bike (side view, riderless) — garage and reward cards. w = target drawn width.
 function drawBikeSide(bx, by, w, bk) {
   const grid = PXS_PLAYER[bk.kind][bk.tier - 1];
   const img = pxSprite('sb-' + bk.kind + bk.tier, grid, bikePal(bk, false), false);
-  pxBlit(img, bx, by, w / 36, 0);
+  pxBlit(img, bx, by, w / 28, 0);
+}
+
+// Crashed bike — the riderless side view tumbling/sliding on its side.
+function drawCrashBike(bx, by, w, bk, rot) {
+  const grid = PXS_PLAYER[bk.kind][bk.tier - 1];
+  const img = pxSprite('sb-' + bk.kind + bk.tier, grid, bikePal(bk, false), false);
+  pxBlitC(img, bx, by, w / 28, rot);
+}
+
+// Rider thrown from the bike — flails while airborne, lies flat after landing.
+function drawTumbleRider(bx, by, scale, bk, rot, t, flat) {
+  const fr = flat ? 0 : Math.floor(t * 9) % 2;
+  const grid = fr ? PX_TUMBLE2 : PX_TUMBLE1;
+  const img = pxSprite('tum' + (fr ? 2 : 1) + bk.kind + bk.tier, grid, bikePal(bk, false), false);
+  pxBlitC(img, bx, by, scale, rot);
+}
+
+// Clouds drift with parallax; a bird flock crosses day skies now and then.
+function drawSkyDecor(t, night) {
+  const pal = night ? { w: '#3c4257', s: '#2e3346' } : { w: '#f4f6f8', s: '#d8dfe8' };
+  for (let k = 0; k < 3; k++) {
+    const span = W + 220;
+    const cxp = ((k * 263 + 48 - bgShift * 0.06 - t * (4 + k * 2)) % span + span) % span - 110;
+    const grid = k % 2 ? PX_CLOUD2 : PX_CLOUD1;
+    pxBlit(pxSprite('cloud' + (k % 2), grid, pal, false), cxp, 40 + ((k * 53) % 64), k === 1 ? 3 : 4, 0);
+  }
+  if (!night) {
+    const span = W + 420;
+    const bp = ((t * 36) % span) - 210;
+    for (let k = 0; k < 4; k++) {
+      const bx = bp - k * 17, by = 48 + (k % 2) * 8 + Math.sin(t * 2 + k) * 4;
+      if (bx < -10 || bx > W + 10) continue;
+      const fr = Math.floor(t * 6 + k) % 2;
+      pxBlit(pxSprite('bird' + fr, fr ? PX_BIRD2 : PX_BIRD1, null, false), bx, by, 2, 0);
+    }
+  }
 }
 
 function drawCar(x, y, w, col) {

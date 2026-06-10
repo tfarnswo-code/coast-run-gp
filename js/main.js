@@ -225,7 +225,20 @@ function update(dt) {
       crashTimer -= dt;
       crashRot = Math.min(crashRot + dt * 5, 1.6);
       speed = Math.max(0, speed - 15000 * dt);
-      if (!fell && speed > 800 && Math.random() < 0.5) spawnParts(1, '#b0a894', 150, 80);
+      if (!fell) {
+        // sparks trail the sliding bike; dust kicks up where the rider lands
+        const prog = 1 - crashTimer / crashDur;
+        const slide = crashDir * (crashDur - crashTimer) * 95;
+        if (Math.random() < 0.7) parts.push({
+          x: W / 2 + slide + (Math.random() - 0.5) * 30, y: H - 34 - Math.random() * 12,
+          vx: -crashDir * (80 + Math.random() * 200), vy: -Math.random() * 90 - 20,
+          life: 0.25 + Math.random() * 0.3, r: 1.5 + Math.random() * 2,
+          col: Math.random() < 0.5 ? '#FAC775' : '#fff2c0' });
+        if (prog * 1.7 >= 1 && Math.random() < 0.5) parts.push({
+          x: W / 2 - crashDir * prog * 165 + (Math.random() - 0.5) * 36, y: H - 28,
+          vx: -crashDir * (50 + Math.random() * 140), vy: -Math.random() * 130 - 40,
+          life: 0.4 + Math.random() * 0.4, r: 2 + Math.random() * 3, col: '#b0a894' });
+      }
       position += speed * dt;
       if (crashTimer <= 0) {
         crashing = false;
@@ -339,10 +352,12 @@ function render() {
     for (let k = 0; k < 40; k++) { const sx2 = (k * 53) % W, sy2 = 8 + MP[k % 48] * H * 0.32; cx.fillRect(sx2, sy2, 1.5, 1.5); }
     cx.fillStyle = '#E8E8E0'; cx.beginPath(); cx.arc(W * 0.78, 56, T.sunR, 0, 7); cx.fill();
     cx.fillStyle = '#d4d4cc'; cx.beginPath(); cx.arc(W * 0.78 - 6, 52, 5, 0, 7); cx.arc(W * 0.78 + 5, 62, 3, 0, 7); cx.fill();
+    drawSkyDecor(raceT, true);
     drawSkyline(H * 0.5, 80, T.mtFar, bgShift * 0.2, 56);
     drawSkyline(H * 0.52, 46, T.mtNear, bgShift * 0.45, 42);
   } else {
     cx.fillStyle = '#FFF3C4'; cx.beginPath(); cx.arc(W * 0.78, 58, T.sunR, 0, 7); cx.fill();
+    drawSkyDecor(raceT, false);
     drawRange(H * 0.5, 95, T.mtFar, bgShift * 0.2, 110);
     drawRange(H * 0.53, 55, T.mtNear, bgShift * 0.45, 70);
     if (T.ridge) {
@@ -459,21 +474,23 @@ function render() {
   }
   const flicker = invulnT > 0 && Math.floor(invulnT * 12) % 2 === 0;
   if (crashing && fell) {
+    // Over the cliff: bike and rider separate and tumble down, shrinking away
     const prog = 1 - crashTimer / crashDur;
-    cx.save();
-    cx.translate(px - prog * 170, py + prog * 110);
-    cx.scale(1 - prog * 0.65, 1 - prog * 0.65);
-    cx.rotate(-prog * 2.2);
-    drawPlayerBike(0, 0, 84, B(), 0, false);
-    cx.restore();
+    drawCrashBike(px - prog * 190, py - 40 + prog * 130, 84 * (1 - prog * 0.6), B(), -prog * 7);
+    drawTumbleRider(px - prog * 110, py - 50 + prog * 150 - Math.sin(Math.min(prog * 1.3, 1) * Math.PI) * 60,
+      4.6 * (1 - prog * 0.55), B(), -prog * 9, raceT, false);
   } else if (crashing) {
-    const slide = crashDir * (crashDur - crashTimer) * 30;
-    cx.save();
-    cx.translate(px + slide, py);
-    cx.rotate(crashDir * crashRot);
-    cx.translate(-(px + slide), -py);
-    drawPlayerBike(px + slide, py, 84, B(), 0, false);
-    cx.restore();
+    // Highside: bike slides off spinning; rider flies over the bars, tumbles,
+    // lands hard and skids to a stop in the dust
+    const prog = 1 - crashTimer / crashDur;
+    const slide = crashDir * (crashDur - crashTimer) * 95;
+    const spin = 1 - Math.pow(1 - prog, 2); // fast spin early, settles lying flat
+    drawCrashBike(px + slide, py - 24, 84, B(), crashDir * spin * 7.85);
+    const air = Math.min(prog * 1.7, 1);
+    const rx = px - crashDir * prog * 165;
+    const ry = py - 14 - Math.sin(air * Math.PI) * 100;
+    const landed = air >= 1;
+    drawTumbleRider(rx, ry, 4.6, B(), landed ? crashDir * 1.5 : crashDir * prog * 10, raceT, landed);
   } else if (!flicker && (state === 'race' || state === 'count')) {
     drawPlayerBike(px, py, 84, B(), lean, keyB && state === 'race');
   }

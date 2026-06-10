@@ -68,6 +68,17 @@ function pxBlit(img, x, y, scale, rot) {
   cx.restore();
 }
 
+// Center-anchored blit — for tumbling things that rotate about their middle.
+function pxBlitC(img, x, y, scale, rot) {
+  const dw = img.width * scale, dh = img.height * scale;
+  cx.save();
+  cx.imageSmoothingEnabled = false;
+  cx.translate(x, y);
+  if (rot) cx.rotate(rot);
+  cx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+  cx.restore();
+}
+
 // Dynamic palette for a player bike: 1/2/5 = main color shades, 3/4 = accent
 // shades, h/i = helmet, r = taillight (bright when braking).
 function bikePal(bk, brake) {
@@ -406,21 +417,19 @@ const PX_RICE2 = [
 
 const PX_PLAYER = { cafe: [PX_CAFE, PX_CAFE2], hog: [PX_HOG, PX_HOG2], enduro: [PX_ENDURO, PX_ENDURO2], rice: [PX_RICE, PX_RICE2] };
 
-// ============================ PLAYER BIKES (side view, garage) ============================
-// 28 x 19, facing right. Rear wheel cols 3-9, front wheel cols 20-26.
+// ============================ PLAYER BIKES (side view, riderless) ============================
+// 28 x 16, facing right, no rider — used in the garage/reward cards and as the
+// crashed bike sliding on its side. Rear wheel cols 3-9, front wheel cols 20-26.
 const PXS_CAFE = [
-  '..............kkkk..........',
-  '.............khhhik.........',
-  '.............khhggk.........',
-  '..............kjjk..........',
-  '............kjjjjk..........',
-  '...........kjjjjjkk.........',
-  '..........kjjjjjjkSk........',
-  '.........kjjddk111kk........',
-  '........k33kddk111kkf.......',
-  '........k111kAAk11ksk.......',
-  '...k1111k.kAAAAk..sk1111k...',
-  '...kSSSSSSSSSk.....ksk......',
+  '........kkk........kk.......',
+  '.......k333k......kSSk......',
+  '......k3333kkkkkkkksk.......',
+  '.....k3333111555111kskk.....',
+  '.....k1111111111111kkffk....',
+  '......kkkk1111111kkkkffk....',
+  '...k111kkAAAAASAkk11ksk.....',
+  '..k11111kASSSASk1111ksk.....',
+  '..kSSSSSSSSSSSSSk..kksk.....',
   '.....kkk............kkk.....',
   '....ktttk..........ktttk....',
   '...kttTttk........kttTttk...',
@@ -430,43 +439,37 @@ const PXS_CAFE = [
   '.....kkk............kkk.....'
 ];
 
-// Cafe Royale — flyscreen, gold cowl, twin pipes
+// Cafe Royale — flyscreen, twin pipes, gold details
 const PXS_CAFE2 = [
-  '..............kkkk..........',
-  '.............khhhik.........',
-  '.............khhggk.........',
-  '..............kjjk..........',
-  '............kjjjjk..........',
-  '...........kjjjjjkk.S.......',
-  '..........kjjjjjjkSkS.......',
-  '.........kjjddk333kk........',
-  '........k33kddk333kkf.......',
-  '........k311kAAk11ksk.......',
-  '...k1111k.kAAAAk..sk1111k...',
-  '...kSSSSSSSSSSk...kk........',
-  '...kSSSSSSSSSk......kkk.....',
+  '........kkk........kkkk.....',
+  '.......k333k......kSSgk.....',
+  '......k3333kkkkkkkkskgk.....',
+  '.....k3333111555111kskk.....',
+  '.....k1111111111111kkffk....',
+  '......kkkk1111111kkkkffk....',
+  '...k111kkAAAAASAkk11ksk.....',
+  '..k11111kASSSASk1111ksk.....',
+  '..kSSSSSSSSSSSSSk11kksk.....',
+  '..kSSSSSSSSSSSk.....kkk.....',
   '....ktttk..........ktttk....',
   '...kttTttk........kttTttk...',
-  '...ktTsTtk........ktTsTtk...',
+  '...ktT3Ttk........ktT3Ttk...',
   '...kttTttk........kttTttk...',
   '....ktttk..........ktttk....',
   '.....kkk............kkk.....'
 ];
 
 const PXS_HOG = [
-  '...........kkkk.............',
-  '..........khhhik............',
-  '..........khhggk............',
-  '...........kjjk.............',
-  '.........kjjjjjk..kSk.......',
-  '.........kjjjjjkkkkSk.......',
-  '.........kjjjjjk..k1k.......',
-  '........kjjjjjk...k1k.......',
-  '......kkjjjjjk..kk11kk......',
-  '..k15551kddddddk133kAks.....',
-  '..k111511kASSAk11kkbbksk....',
-  '...kSSSSSSSSSSSSSkkkksk.....',
-  '.....kkk............kkk.....',
+  '..................kkk.......',
+  '.........kkkk....kSSSk......',
+  '........kjjjjk....ksk.......',
+  '..k111111kjjk155551ksk......',
+  '.k11111111kk1555555kkskk....',
+  '.k511111111k15555551kkfk....',
+  '..kkkkkkk.kkAASAAk11ksfk....',
+  '........kkASSSSAk111ksk.....',
+  '..kSSSSSSSSSSSSSSk1kksk.....',
+  '..kSSSSSSSSSSSSk....kkk.....',
   '....ktttk..........ktttk....',
   '...kttTttk........kttTttk...',
   '...ktTsTtk........ktTsTtk...',
@@ -475,22 +478,19 @@ const PXS_HOG = [
   '.....kkk............kkk.....'
 ];
 
-// Big Hog — ape hangers, saddlebag, windshield
+// Big Hog — ape hangers, windshield, saddlebag
 const PXS_HOG2 = [
-  '...........kkkk....kSSk.....',
-  '..........khhhik...kSk......',
-  '..........khhggk.ggkSk......',
-  '...........kjjk..gggjk......',
-  '.........kjjjjjk.gggjk......',
-  '.........kjjjjjkkkkjjk......',
-  '.........kjjjjjk..k1k.......',
-  '......kkkjjjjjk...k1k.......',
-  '.....kjjkjjjjk..kk11kk......',
-  '..k15kjjkddddddk133kAks.....',
-  '..k151kjjkASSAk11kkbbksk....',
-  '...kSSSSSSSSSSSSSkkkksk.....',
-  '.....kkk............kkk.....',
-  '....ktttk..........ktttk....',
+  '..................kk.kggk...',
+  '.........kkkk....kSk.kggk...',
+  '........kjjjjk...kSkkggk....',
+  '..k111111kjjk15555kSkgk.....',
+  '.k11111111kk155555kkskk.....',
+  '.k511111111k15555551kkfk....',
+  '.kjjjjkkk.kkAASAAk11ksfk....',
+  '.kjjjjk.kkASSSSAk111ksk.....',
+  '.kj33jkSSSSSSSSSSk1kksk.....',
+  '.kjjjjkSSSSSSSSk....kkk.....',
+  '..kkkktttk.........ktttk....',
   '...kttTttk........kttTttk...',
   '...ktTsTtk........ktTsTtk...',
   '...kttTttk........kttTttk...',
@@ -499,19 +499,16 @@ const PXS_HOG2 = [
 ];
 
 const PXS_ENDURO = [
-  '.............kkkk...........',
-  '............khhhik..........',
-  '............khhggk..........',
-  '.............kjjk...........',
-  '...........kj33jjk..........',
-  '..........kj33jjjkk.........',
-  '..........kjjjjjjkSk........',
-  '.......k11kjddk33kkk........',
-  '......k111kkddk33k.k11k.....',
-  '.......kk11kddkk1kk1111k....',
-  '........k11kbbk11ks.kkk.....',
-  '.........kkkkkAAkks.........',
-  '.....kkk...kkkkk....kkk.....',
+  '..........kkkkk.....kk......',
+  '.........k11111kkkkkSk......',
+  '........k1111111111kskk.....',
+  '......kk13333111111kksk.....',
+  '....kk3333333k11111kkskk....',
+  '...k333333333k111kk.k111k...',
+  '..k33kkkkkAAk111k..k11111k..',
+  '..kk....kASSAk1k....kkkkk...',
+  '.........kSSk.kk............',
+  '.....kkk............kkk.....',
   '....kTtTk..........kTtTk....',
   '...kTtTtTk........kTtTtTk...',
   '...ktTsTtk........ktTsTtk...',
@@ -520,44 +517,38 @@ const PXS_ENDURO = [
   '.....kkk............kkk.....'
 ];
 
-// Enduro Pro — front number plate, rally tower
+// Enduro Pro — rally tower + number plate up front, gold hubs
 const PXS_ENDURO2 = [
-  '.............kkkk...........',
-  '............khhhik..........',
-  '............khhggk..........',
-  '.............kjjk..kwwk.....',
-  '...........kj33jjk.kw3k.....',
-  '..........kj33jjjkkkwk......',
-  '..........kjjjjjjkSkk.......',
-  '.......k11kjddk33kkk........',
-  '......k111kkddk33k.k11k.....',
-  '.......kk11kddkk1kk1111k....',
-  '........k11kbbk11ks.kkk.....',
-  '.........kkkkkAAkks.........',
-  '.....kkk...kkkkk....kkk.....',
+  '..........kkkkk....kwwk.....',
+  '.........k11111kkkkkw3k.....',
+  '........k1111111111kwwkk....',
+  '......kk13333111111kksk.....',
+  '....kk3333333k11111kkskk....',
+  '...k333333333k111kk.k111k...',
+  '..k33kkkkkAAk111k..k11111k..',
+  '..kk....kASSAk1k....kkkkk...',
+  '.........kSSk.kk............',
+  '.....kkk............kkk.....',
   '....kTtTk..........kTtTk....',
   '...kTtTtTk........kTtTtTk...',
-  '...ktTsTtk........ktTsTtk...',
+  '...ktT3Ttk........ktT3Ttk...',
   '...kTtTtTk........kTtTtTk...',
   '....ktTtk..........ktTtk....',
   '.....kkk............kkk.....'
 ];
 
 const PXS_RICE = [
-  '............kkkk............',
-  '...........khhihk...........',
-  '....kkk....khhggkk..........',
-  '...k333kkkjjjjjjjgk.........',
-  '...k33jjjjjjjjjjjggk........',
-  '....kjjjjjjjjjkkk11k........',
-  '.....kddddjjk..k111kk.......',
-  '.....kkdddk11111111kfk......',
-  '...k111kdk111111111kk.......',
-  '...k1111kbk1111111k.........',
-  '....k111kkk111111ksk........',
-  '.....k11SSSk11111k.sk.......',
-  '.....kkkkkkkkkkkk...........',
-  '....ktttk..........ktttk....',
+  '.....kkkk...................',
+  '....k3333k..................',
+  '....k33331kkkkk.............',
+  '.....k11111111111kkk........',
+  '......k1111111111111ggk.....',
+  '.....k155511111111111ggk....',
+  '....k15511kkkk11111111kk....',
+  '...k15511kk..kk1111111kfk...',
+  '...k111kk.....kk11111kkkk...',
+  '.....kkk......k1111kkkk.....',
+  '....ktttk......kkkktttk.....',
   '...kttTttk........kttTttk...',
   '...ktTsTtk........ktTsTtk...',
   '...kttTttk........kttTttk...',
@@ -565,30 +556,77 @@ const PXS_RICE = [
   '.....kkk............kkk.....'
 ];
 
-// Superbike — bigger tail, winglets, fat rubber
+// Superbike — winglets, undertail pipes, fat rubber
 const PXS_RICE2 = [
-  '............kkkk............',
-  '...........khhihk...........',
-  '...kkkk....khhggkk..........',
-  '..k3333kkkjjjjjjjgk.........',
-  '..k333jjjjjjjjjjjggk........',
-  '...k3jjjjjjjjjkkk11k........',
-  '....kddddjjk..k111kk........',
-  '....kkdddk11111111kfk.......',
-  '..k111kdk111111111kk........',
-  '..k1111kbk1111111k33k.......',
-  '...k111kkk111111ksk3k.......',
-  '....k11SSSk11111k.sk........',
-  '....kkkkkkkkkkkk............',
-  '...kttttk.........kttttk....',
+  '....kkkkk...................',
+  '...k33333k..................',
+  '...k333331kkkkk.............',
+  '....k1111111111111kkk.......',
+  '.....k111111111111111ggk....',
+  '....k1555111111111111ggk....',
+  '...k15511kkkk331111111kk....',
+  '..k15511kSSkk3311111111fk...',
+  '..k111kkSSk...kk11111kkkk...',
+  '....kkkk......k1111kkkk.....',
+  '...kttttk......kkkttttk.....',
   '..kttTtttk.......kttTtttk...',
-  '..ktTssTtk.......ktTssTtk...',
+  '..ktT33Ttk.......ktT33Ttk...',
   '..kttTtttk.......kttTtttk...',
   '...kttttk.........kttttk....',
   '....kkkk...........kkkk.....'
 ];
 
 const PXS_PLAYER = { cafe: [PXS_CAFE, PXS_CAFE2], hog: [PXS_HOG, PXS_HOG2], enduro: [PXS_ENDURO, PXS_ENDURO2], rice: [PXS_RICE, PXS_RICE2] };
+
+// ============================ TUMBLING RIDER (crash) ============================
+// Two flail frames, alternated while airborne. Helmet uses the bike's h/i palette.
+const PX_TUMBLE1 = [
+  '.....kkk.....',
+  '....khhhk....',
+  '....khihk....',
+  'kk.kkjjjkk.kk',
+  '.kjkjjjjjkjk.',
+  '..kjjjjjjjk..',
+  '...kjjjjjk...',
+  '..kdk...kdk..',
+  '.kdk.....kdk.',
+  '.kbk.....kbk.'
+];
+const PX_TUMBLE2 = [
+  '...kkkk....',
+  '..khhhhk...',
+  '.khihhhjk..',
+  '.kjjjjjjk..',
+  'kjjdjjjdjk.',
+  '.kddjjddk..',
+  '..kbkkbk...'
+];
+
+// ============================ SKY (clouds + birds) ============================
+const PX_CLOUD1 = [
+  '......wwwww.........',
+  '....wwwwwwwww..ww...',
+  '..wwwwwwwwwwwwwwww..',
+  '.wwwwwwwwwwwwwwwwww.',
+  'wwsswwwwwwsswwwwwww.',
+  '.ssswwwssssssswwss..'
+];
+const PX_CLOUD2 = [
+  '...wwww......',
+  '.wwwwwwww.w..',
+  'wwwwwwwwwwww.',
+  '.sswwwssswws.'
+];
+const PX_BIRD1 = [
+  'k...k',
+  '.k.k.',
+  '..k..'
+];
+const PX_BIRD2 = [
+  '.....',
+  'kk.kk',
+  '..k..'
+];
 
 // ============================ TRAFFIC (rear, half-grids) ============================
 const PX_CAR = [

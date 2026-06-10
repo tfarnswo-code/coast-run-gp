@@ -24,9 +24,18 @@ pixels stay chunky at any draw size. Symmetric rear-view sprites are authored as
 half only and mirrored by the engine (`half: true`). Player bikes have two sprite sets:
 rear view (racing, `PX_PLAYER`) and side view (garage/reward cards, `PXS_PLAYER`,
 drawn via `drawBikeSide`), each with distinct tier-1/tier-2 grids (Big Hog gets ape
-hangers + saddlebags, Enduro Pro a number plate, Superbike winglets). Art direction is
-Tim's pixel mockups (June 2026): black outlines, silly-cute, 80s arcade. UI text is
-monospace to match.
+hangers + saddlebags, Enduro Pro a number plate, Superbike winglets). Side views are
+RIDERLESS by Tim's request (clearer in the garage) and double as the crashed bike.
+Art direction is Tim's pixel mockups (June 2026): black outlines, silly-cute, 80s
+arcade. UI text is monospace to match.
+
+Crash sequence (render() in main.js): bike and rider separate. The bike (side-view
+sprite, `drawCrashBike`) slides off in the crash direction, spinning fast then settling
+flat, trailing gold sparks; the rider (`drawTumbleRider`, two flail frames) flies over
+the bars on a parabola, tumbles, lands flat and skids in a dust cloud. Cliff falls
+tumble both down-left while shrinking. Sky décor (`drawSkyDecor`): three parallax
+clouds on all courses (dark palette at night), a four-bird flapping flock crossing
+day skies every ~30 s.
 
 ## How the rendering works (js/sprites.js + render() in main.js)
 
