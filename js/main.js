@@ -11,6 +11,10 @@ let parts = [];
 let rivals = [], traffic = [];
 let keyL = false, keyR = false, keyB = false, keyU = false;
 let cheatBuf = '', cheatT = 0;
+let airT = 0, airDur = 0, jumpCd = 0, prevGrade = 0;     // jump physics (Dakar + crest launches)
+let boostOn = false, boostM = 1;                          // Volt "YIKES!" meter
+let newBike = -1, newBikeT = 0;                           // mystery-bike reveal toast
+const UPK = 154286;                                       // road units per displayed km
 
 function B() { return BIKES[curBike]; }
 
@@ -38,8 +42,10 @@ function reset() {
   speed = 0; position = 0; playerN = 0; raceT = 0; lapStartT = 0; curLap = 0; lapTimes = []; bgShift = 0; lastCd = 4;
   crashing = false; crashTimer = 0; crashRot = 0; invulnT = 0; flashT = 0; bumpT = 0; lastBumpSeg = -1; fell = false; parts = []; conf = [];
   armorLeft = B().armor; staggerT = 0;
+  airT = 0; airDur = 0; jumpCd = 0; prevGrade = 0; boostOn = false; boostM = 1;
   rivals = []; traffic = [];
-  for (let i = 0; i < 12; i++) rivals.push({ z: (i + 1) * trackLen * 0.03, off: (i % 3 - 1) * 0.45, base: (i % 3 - 1) * 0.45, speed: maxSpeed * (0.42 + i * 0.024), col: colors[i], ph: i * 1.7 });
+  const rGap = T.p2p ? 3600 : trackLen * 0.03;
+  for (let i = 0; i < 12; i++) rivals.push({ z: (i + 1) * rGap, off: (i % 3 - 1) * 0.45, base: (i % 3 - 1) * 0.45, speed: maxSpeed * (0.42 + i * 0.024), col: colors[i], ph: i * 1.7 });
   const nt = T.traf || 10;
   const tt = ['car', 'car', 'truck', 'car', 'bus', 'car', 'truck', 'car', 'car', 'bus'];
   let tc = ['#5F5E5A', '#185FA5', '#9AB0BC', '#72243E', '#EF9F27', '#0F6E56', '#B4B2A9', '#444441', '#993C1D', '#EF9F27'];
@@ -60,20 +66,36 @@ function resetCareer() {
   if (unlockedT.indexOf(sel) < 0) sel = 0;
   saveCareer();
 }
+// Tim's scheme: the bike reward is a MYSTERY — random within the current tier.
+// All tier-1 bikes before tier 2 appears; all 8 standard bikes before tier 3.
+function bikePoolNow() {
+  const no = i => owned.indexOf(i) < 0;
+  const t1 = [1, 2, 3].filter(no); if (t1.length) return { tier: 1, pool: t1 };
+  const t2 = [4, 5, 6, 7].filter(no); if (t2.length) return { tier: 2, pool: t2 };
+  const t3 = []; for (let i = 8; i < BIKES.length; i++) if (no(i)) t3.push(i);
+  if (t3.length) return { tier: 3, pool: t3 };
+  return null;
+}
 function buildRewards() {
   rewardOpts = [];
   if (lives < 5) rewardOpts.push({ t: 'life' });
-  const t1 = [1, 2, 3].filter(i => owned.indexOf(i) < 0);
-  const pool = (t1.length ? t1 : [4, 5, 6, 7].filter(i => owned.indexOf(i) < 0)).slice(0, 2);
-  for (const i of pool) rewardOpts.push({ t: 'bike', b: i });
+  const bp = bikePoolNow();
+  if (bp) rewardOpts.push({ t: 'mbike', tier: bp.tier });
   const lt = [4, 5, 6, 7].filter(i => unlockedT.indexOf(i) < 0);
-  if (lt.length && rewardOpts.length < 4) rewardOpts.push({ t: 'track', k: lt[0] });
+  if (lt.length) rewardOpts.push({ t: 'track', k: lt[0] });
+  else {
+    const le = []; for (let i = 8; i < THEMES.length; i++) if (unlockedT.indexOf(i) < 0) le.push(i);
+    if (le.length) rewardOpts.push({ t: 'track', k: le[0] });
+  }
   selR = 0;
 }
 function claimReward(o) {
   if (o) {
     if (o.t === 'life') lives = Math.min(5, lives + 1);
-    else if (o.t === 'bike') owned.push(o.b);
+    else if (o.t === 'mbike') {
+      const bp = bikePoolNow();
+      if (bp) { const pick = bp.pool[Math.floor(Math.random() * bp.pool.length)]; owned.push(pick); newBike = pick; newBikeT = 5; }
+    }
     else unlockedT.push(o.k);
   }
   pendingReward = false; state = 'ready'; saveCareer();
@@ -87,7 +109,7 @@ addEventListener('keydown', e => {
   if (e.key && e.key.length === 1) {
     cheatBuf = (cheatBuf + e.key.toLowerCase()).slice(-7);
     if (cheatBuf === 'cheater') {
-      owned = [0, 1, 2, 3, 4, 5, 6, 7]; unlockedT = [0, 1, 2, 3, 4, 5, 6, 7];
+      owned = BIKES.map((b, i) => i); unlockedT = THEMES.map((t, i) => i);
       lives = 5; cheatT = 3.5; saveCareer();
       try { initAudio(); winJingle(); } catch (err) { }
     }
@@ -117,6 +139,15 @@ addEventListener('keydown', e => {
   if (e.code === 'ArrowDown' || e.code === 'KeyS') { keyB = true; e.preventDefault(); }
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { keyU = true; e.preventDefault(); }
   if (e.code === 'KeyM') muted = !muted;
+  if (e.code === 'Space' && state === 'race' && !paused && !crashing) {
+    const spc = B().sp;
+    if (spc === 'boost') { boostOn = boostOn ? false : boostM > 0.05; }
+    else if (spc === 'jump' && airT <= 0 && jumpCd <= 0 && speed > 1200) {
+      airDur = 0.5 + speed / maxSpeed * 0.4; airT = airDur; jumpCd = 1.4;
+      try { note(300, 0, 0.16, 'triangle', 0.12); } catch (er) { }
+    }
+    e.preventDefault(); return;
+  }
   if (e.code === 'Enter' || e.code === 'Space') {
     if (state === 'title') { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); }
     else if (state === 'ready') { startRace(); }
@@ -143,8 +174,8 @@ cv.addEventListener('click', e => {
   if (state === 'dead') { resetCareer(); state = 'ready'; buildCourse(sel); reset(); return; }
   if (state === 'ready') {
     for (let i = 0; i < THEMES.length; i++) {
-      const gx = 30 + (i % 4) * 160, gy = 86 + Math.floor(i / 4) * 128;
-      if (mx >= gx && mx <= gx + 150 && my >= gy && my <= gy + 118) {
+      const gx = 30 + (i % 4) * 160, gy = 70 + Math.floor(i / 4) * 100;
+      if (mx >= gx && mx <= gx + 150 && my >= gy && my <= gy + 92) {
         if (unlockedT.indexOf(i) < 0) return;
         if (sel === i) { startRace(); }
         else { sel = i; buildCourse(sel); reset(); }
@@ -155,8 +186,8 @@ cv.addEventListener('click', e => {
   }
   if (state === 'garage') {
     for (let i = 0; i < owned.length; i++) {
-      const gx = 30 + (i % 4) * 160, gy = 78 + Math.floor(i / 4) * 108;
-      if (mx >= gx && mx <= gx + 150 && my >= gy && my <= gy + 98) {
+      const gx = 22 + (i % 5) * 128, gy = 78 + Math.floor(i / 5) * 106;
+      if (mx >= gx && mx <= gx + 122 && my >= gy && my <= gy + 96) {
         if (selG === i) { curBike = owned[selG]; saveCareer(); state = 'ready'; }
         else selG = i;
         return;
@@ -227,6 +258,7 @@ function update(dt) {
   const pSeg = segs[Math.floor((pos + playerZ) / segLen) % N];
   if (flashT > 0) flashT -= dt;
   if (cheatT > 0) cheatT -= dt;
+  if (newBikeT > 0) newBikeT -= dt;
   if (bumpT > 0) bumpT -= dt;
   if (staggerT > 0) staggerT -= dt;
   for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 480 * dt; }
@@ -271,16 +303,28 @@ function update(dt) {
         else invulnT = 2;
       }
     } else {
+      // specials: Volt boost meter + jump timers
+      if (jumpCd > 0) jumpCd -= dt;
+      if (airT > 0) { airT -= dt; if (airT <= 0) { bumpT = Math.max(bumpT, 0.25); thud(); } }
+      if (boostOn) { boostM -= dt / 2.4; if (boostM <= 0) { boostM = 0; boostOn = false; } }
+      else if (bk.sp === 'boost') boostM = Math.min(1, boostM + dt / 16);
+      // crest launches (Crest County): flying off the top of a sharp rise at speed
+      const grd = pSeg.y2 - pSeg.y1;
+      if (T.jumps && airT <= 0 && prevGrade > 22 && grd <= 0 && speed > maxSpeed * 0.45) {
+        airDur = 0.4 + Math.min(0.55, (prevGrade / 90) * (speed / maxSpeed)); airT = airDur;
+      }
+      prevGrade = grd;
       const onGrass = Math.abs(playerN) > 1;
-      const topS = maxSpeed * bk.ts;
+      let topS = maxSpeed * bk.ts, acm = bk.ac;
+      if (boostOn) { topS *= 1.35; acm *= 2; }
       const cap = onGrass ? grassMax * (0.7 + bk.hz * 0.9) : topS;
-      if (keyU && speed < cap) speed += accel * bk.ac * dt * Math.max(0.15, 1 - speed / cap);
+      if (keyU && speed < cap) speed += accel * acm * dt * Math.max(0.15, 1 - speed / cap);
       else if (!keyU) speed = Math.max(0, speed - (1500 + speed * 0.15) * dt);
       if (speed > cap) speed = Math.max(cap, speed - 9000 * dt);
-      if (keyB) speed = Math.max(0, speed - brakeF * bk.br * dt);
+      if (keyB) { speed = Math.max(0, speed - brakeF * bk.br * dt); boostOn = false; }
       const sp = speed / maxSpeed;
       const steer = (keyR ? 1 : 0) - (keyL ? 1 : 0);
-      playerN += steer * dt * 2.2 * bk.hd * Math.max(sp, 0.25);
+      playerN += steer * dt * 2.2 * bk.hd * Math.max(sp, 0.25) * (airT > 0 ? 0.25 : 1);
       playerN -= dt * sp * pSeg.curve * 0.36;
       playerN = Math.max(-2.2, Math.min(2.2, playerN));
       lean += ((steer * Math.min(1, sp * 1.5)) - lean) * Math.min(1, dt * 8);
@@ -291,7 +335,7 @@ function update(dt) {
       if (!crashing) {
         const pi = Math.floor((pos + playerZ) / segLen);
         const hseg = segs[pi % N];
-        if (hseg.hz) {
+        if (hseg.hz && airT <= 0) {
           if (hseg.hz.t === 'pot' && Math.abs(playerN - hseg.hz.o) < 0.16) {
             if (pi !== lastBumpSeg) {
               lastBumpSeg = pi; speed *= 0.55 + bk.hz * 0.3; bumpT = 0.7 * (1.2 - bk.hz); thud();
@@ -306,7 +350,7 @@ function update(dt) {
             if (Math.random() < 0.35) spawnParts(1, '#8a6a44', 130, 70);
           }
         }
-        if (invulnT <= 0 && speed > 1200) {
+        if (invulnT <= 0 && speed > 1200 && airT <= 0) {
           for (let k = 0; k < 2; k++) {
             const ts = segs[(pi + k) % N];
             const a = ts.animal;
@@ -347,11 +391,15 @@ function update(dt) {
         }
       }
     }
-    const lapNow = Math.floor(position / trackLen);
-    if (lapNow > curLap) {
-      lapTimes.push(raceT - lapStartT); lapStartT = raceT; curLap = lapNow;
-      if (curLap >= 3) finishRace();
-      else { beep(660, 0.1); beep(990, 0.18); }
+    if (T.p2p) {
+      if (position >= trackLen - 160 * segLen) finishRace();
+    } else {
+      const lapNow = Math.floor(position / trackLen);
+      if (lapNow > curLap) {
+        lapTimes.push(raceT - lapStartT); lapStartT = raceT; curLap = lapNow;
+        if (curLap >= 3) finishRace();
+        else { beep(660, 0.1); beep(990, 0.18); }
+      }
     }
   } else if (state !== 'count') { lean *= 0.95; }
   audioTick();
@@ -517,7 +565,9 @@ function render() {
     const landed = air >= 1;
     drawTumbleRider(rx, ry, 4.6, B(), landed ? crashDir * 1.5 : crashDir * prog * 10, raceT, landed);
   } else if (!flicker && (state === 'race' || state === 'count')) {
-    drawPlayerBike(px, py, 84, B(), lean, keyB && state === 'race');
+    const u = airDur > 0 ? Math.max(0, airT) / airDur : 0;
+    const airOff = airT > 0 ? Math.sin((1 - u) * Math.PI) * (26 + airDur * 44) : 0;
+    drawPlayerBike(px, py, 84, B(), lean, keyB && state === 'race', airOff);
   }
   for (const p of parts) {
     cx.globalAlpha = Math.min(1, p.life * 2);
@@ -542,7 +592,10 @@ function drawHud() {
     cx.fillStyle = 'rgba(20,24,32,0.72)';
     rr(12, 12, 150, 32, 8); cx.fill(); rr(W - 122, 12, 110, 32, 8); cx.fill(); rr(W / 2 - 62, 12, 170, 32, 8); cx.fill();
     cx.fillStyle = '#fff'; cx.font = '500 14px monospace'; cx.textAlign = 'left';
-    cx.fillText('Lap ' + Math.min(curLap + 1, 3) + '/3   ' + fmt(raceT), 24, 29);
+    if (T.p2p) {
+      const togo = Math.max(0, (trackLen - 160 * segLen - position) / UPK);
+      cx.fillText('TO GO ' + togo.toFixed(1) + 'km  ' + fmt(raceT), 24, 29);
+    } else cx.fillText('Lap ' + Math.min(curLap + 1, 3) + '/3   ' + fmt(raceT), 24, 29);
     cx.textAlign = 'right';
     const rank = 1 + rivals.filter(r => r.z > position).length;
     cx.fillText('Pos ' + rank + '/13', W - 24, 29);
@@ -558,9 +611,21 @@ function drawHud() {
     cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 40, armorLeft > 0 ? 150 : 110, 28, 8); cx.fill();
     cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.textAlign = 'left';
     cx.fillText(B().name + (armorLeft > 0 ? ' · armor ' + armorLeft : ''), 24, H - 26);
+    if (B().sp === 'boost') {
+      cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 74, 150, 26, 8); cx.fill();
+      cx.fillStyle = boostOn ? '#4DD8E8' : '#fff'; cx.font = '500 11px monospace'; cx.fillText(boostOn ? 'YIKES!!!' : 'YIKES! (space)', 24, H - 61);
+      cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.fillRect(118, H - 66, 36, 10);
+      cx.fillStyle = '#4DD8E8'; cx.fillRect(118, H - 66, 36 * boostM, 10);
+    } else if (B().sp === 'jump') {
+      cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 74, 150, 26, 8); cx.fill();
+      const rdy = jumpCd <= 0 && airT <= 0;
+      cx.fillStyle = airT > 0 ? '#FAC775' : rdy ? '#9FE1CB' : '#888'; cx.font = '500 11px monospace';
+      cx.fillText(airT > 0 ? 'AIRBORNE!' : rdy ? 'JUMP (space)' : 'JUMP ...', 24, H - 61);
+    }
     if (muted) {
-      cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 74, 72, 26, 8); cx.fill();
-      cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.fillText('muted', 24, H - 61);
+      const my2 = B().sp ? H - 104 : H - 74;
+      cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, my2, 72, 26, 8); cx.fill();
+      cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.fillText('muted', 24, my2 + 13);
     }
     if (crashing) {
       cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 34px monospace';
@@ -591,7 +656,7 @@ function drawHud() {
     cx.fillText('a motorcycle road racing game', W / 2, H * 0.22 + 32);
     drawBikeSide(W / 2, H * 0.66, 210, B());
     cx.fillStyle = '#B4B2A9'; cx.font = '12px monospace';
-    cx.fillText(B().name + ' · bikes ' + owned.length + '/8 · tracks ' + unlockedT.length + '/8', W / 2, H * 0.72);
+    cx.fillText(B().name + ' · bikes ' + owned.length + '/' + BIKES.length + ' · tracks ' + unlockedT.length + '/' + THEMES.length, W / 2, H * 0.72);
     cx.font = '11px monospace'; cx.textAlign = 'right'; cx.fillText('Lives', W - 110, 28);
     for (let i = 0; i < 5; i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
     cx.textAlign = 'center';
@@ -604,14 +669,25 @@ function drawHud() {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
     cx.font = '500 24px monospace'; cx.fillText('Choose your race', W / 2, 30);
-    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Riding the ' + B().name + ' · tracks unlocked: ' + unlockedT.length + '/8', W / 2, 56);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Riding the ' + B().name + ' · tracks unlocked: ' + unlockedT.length + '/' + THEMES.length, W / 2, 56);
     cx.font = '11px monospace'; cx.textAlign = 'right'; cx.fillStyle = '#B4B2A9'; cx.fillText('Lives', W - 110, 28);
     for (let i = 0; i < 5; i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
     for (let i = 0; i < THEMES.length; i++) {
-      drawCourseCard(i, 30 + (i % 4) * 160, 86 + Math.floor(i / 4) * 128);
+      drawCourseCard(i, 30 + (i % 4) * 160, 70 + Math.floor(i / 4) * 100);
     }
     cx.fillStyle = '#FAC775'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
     cx.fillText('← → choose · enter: race · b: garage · q: save & exit · any finish = +1 life', W / 2, H - 20);
+    if (newBikeT > 0 && newBike >= 0) {
+      cx.fillStyle = 'rgba(20,24,32,0.95)'; rr(W / 2 - 170, H / 2 - 80, 340, 160, 12); cx.fill();
+      cx.strokeStyle = '#FAC775'; cx.lineWidth = 2; rr(W / 2 - 170, H / 2 - 80, 340, 160, 12); cx.stroke();
+      cx.fillStyle = '#FAC775'; cx.font = '500 16px monospace';
+      cx.fillText('NEW BIKE!', W / 2, H / 2 - 56);
+      drawBikeSide(W / 2, H / 2 + 28, 150, BIKES[newBike]);
+      cx.fillStyle = '#fff'; cx.font = '500 15px monospace';
+      cx.fillText(BIKES[newBike].name, W / 2, H / 2 + 46);
+      cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
+      cx.fillText(BIKES[newBike].fl, W / 2, H / 2 + 64);
+    }
   }
   if (state === 'garage') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
@@ -620,13 +696,13 @@ function drawHud() {
     cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Pick your ride · enter: choose race · b: title · q: save & exit', W / 2, 56);
     for (let i = 0; i < owned.length; i++) {
       const bk = BIKES[owned[i]];
-      const gx = 30 + (i % 4) * 160, gy = 78 + Math.floor(i / 4) * 108;
-      cx.fillStyle = '#222a38'; rr(gx, gy, 150, 98, 10); cx.fill();
-      drawBikeSide(gx + 75, gy + 72, 96, bk);
-      cx.fillStyle = '#fff'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
-      cx.fillText(bk.name, gx + 75, gy + 86);
-      if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px monospace'; cx.fillText('Tier 2', gx + 75, gy + 12); }
-      if (selG === i) { cx.strokeStyle = '#FAC775'; cx.lineWidth = 2.5; rr(gx, gy, 150, 98, 10); cx.stroke(); }
+      const gx = 22 + (i % 5) * 128, gy = 78 + Math.floor(i / 5) * 106;
+      cx.fillStyle = '#222a38'; rr(gx, gy, 122, 96, 10); cx.fill();
+      drawBikeSide(gx + 61, gy + 70, 88, bk);
+      cx.fillStyle = '#fff'; cx.font = '500 12px monospace'; cx.textAlign = 'center';
+      cx.fillText(bk.name, gx + 61, gy + 84);
+      if (bk.tier > 1) { cx.fillStyle = bk.tier === 3 ? '#4DD8E8' : '#FAC775'; cx.font = '10px monospace'; cx.fillText('Tier ' + bk.tier, gx + 61, gy + 12); }
+      if (selG === i) { cx.strokeStyle = '#FAC775'; cx.lineWidth = 2.5; rr(gx, gy, 122, 96, 10); cx.stroke(); }
     }
     const sb = BIKES[owned[selG]];
     cx.fillStyle = '#222a38'; rr(30, H - 100, W - 60, 86, 10); cx.fill();
@@ -652,14 +728,13 @@ function drawHud() {
         cx.fillText('Extra life', gx + 75, 220);
         cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
         cx.fillText('Live to wreck again', gx + 75, 240);
-      } else if (o.t === 'bike') {
-        const bk = BIKES[o.b];
-        drawBikeSide(gx + 75, 198, 118, bk);
+      } else if (o.t === 'mbike') {
+        cx.fillStyle = '#FAC775'; cx.font = '700 52px monospace';
+        cx.fillText('?', gx + 75, 170);
         cx.fillStyle = '#fff'; cx.font = '500 14px monospace';
-        cx.fillText(bk.name, gx + 75, 220);
+        cx.fillText('Mystery bike', gx + 75, 220);
         cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
-        cx.fillText(bk.fl, gx + 75, 240);
-        if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px monospace'; cx.fillText('Tier 2', gx + 75, 125); }
+        cx.fillText('Random tier ' + o.tier + ' machine', gx + 75, 240);
       } else {
         const th = THEMES[o.k];
         cx.fillStyle = th.sky; cx.fillRect(gx + 18, 135, 114, 46);
@@ -695,8 +770,7 @@ function drawHud() {
     }
     if (finalRank === 1) drawCup(W / 2 - 150, H * 0.2, 30);
     cx.fillStyle = '#fff'; cx.font = '14px monospace';
-    const best = Math.min.apply(null, lapTimes);
-    cx.fillText('Total ' + fmt(raceT) + ' · best lap ' + fmt(best), W / 2, H * 0.79);
+    cx.fillText('Total ' + fmt(raceT) + (lapTimes.length ? ' · best lap ' + fmt(Math.min.apply(null, lapTimes)) : ''), W / 2, H * 0.79);
     cx.fillStyle = '#9FE1CB';
     cx.fillText((bonusLife ? 'Finish bonus +1 life (' + lives + ' in hand)' : 'Lives full (' + lives + ')') + (pendingReward ? ' · reward awaits' : ''), W / 2, H * 0.845);
     cx.fillStyle = '#FAC775'; cx.font = '500 15px monospace';
@@ -713,15 +787,14 @@ function drawHud() {
     cx.fillText(state === 'dead' ? 'Wrecked!' : 'Race complete', W / 2, H * 0.27);
     cx.font = '15px monospace';
     if (state === 'dead') {
-      cx.fillText('You ran out of lives on lap ' + Math.min(curLap + 1, 3) + ' of ' + T.name + '.', W / 2, H * 0.38);
+      cx.fillText(T.p2p ? 'You ran out of lives ' + (position / UPK).toFixed(1) + 'km into ' + T.name + '.' : 'You ran out of lives on lap ' + Math.min(curLap + 1, 3) + ' of ' + T.name + '.', W / 2, H * 0.38);
       cx.fillText('Time on track: ' + fmt(raceT), W / 2, H * 0.45);
       cx.fillStyle = '#F0997B'; cx.fillText('Career over — garage, tracks and lives reset', W / 2, H * 0.52);
       cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace';
       cx.fillText('Click or press enter — fresh start, cafe racer, 3 lives', W / 2, H * 0.64);
     } else {
-      const best = Math.min.apply(null, lapTimes);
       cx.fillText('Final position: ' + finalRank + ' of 13 on ' + T.name, W / 2, H * 0.39);
-      cx.fillText('Total ' + fmt(raceT) + ' · best lap ' + fmt(best), W / 2, H * 0.46);
+      cx.fillText('Total ' + fmt(raceT) + (lapTimes.length ? ' · best lap ' + fmt(Math.min.apply(null, lapTimes)) : ''), W / 2, H * 0.46);
       cx.fillStyle = '#9FE1CB';
       cx.fillText(bonusLife ? 'You finished — +1 life (' + lives + ' in hand)' : 'You finished — lives already full (' + lives + ')', W / 2, H * 0.53);
       cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace';

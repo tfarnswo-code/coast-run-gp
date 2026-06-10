@@ -102,6 +102,7 @@ function audioTick() {
   eng.o2.frequency.setTargetAtTime(f * sc.r2 + 4, t, 0.03);
   let tg = racing ? (crashing ? 0.015 : 0.028 + (keyU ? 0.026 : 0) + sp * 0.012) : (state === 'count' || state === 'garage' ? 0.04 : 0);
   if (sc.chug) tg *= 1 - 0.28 * (1 - sp * 0.7) * (0.5 + 0.5 * Math.sin(performance.now() / 45));
+  if (sc.ev) tg *= 0.2; // electric: barely audible whine, mostly wind
   eng.g.gain.setTargetAtTime(tg, t, 0.06);
   windG.gain.setTargetAtTime(racing ? sp * sp * 0.05 : 0, t, 0.1);
 }

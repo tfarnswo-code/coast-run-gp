@@ -126,15 +126,28 @@ player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After
    UNLOCKS (replaces feat idea): podium "new bike" reward becomes a RANDOM bike from the
    current tier — all tier 1 before tier 2 starts appearing, all 8 standard bikes before
    tier 3 starts. Some useful, some just fun, that's the point.
-2. Conditions as course variants: night versions of existing tracks (deer eyes glowing!), rain
+2. Tier-3 races — APPROVED SLATE (June 10 2026): point-to-point "Epic Runs", no laps, racing
+   the same 12 rivals, distance-to-go HUD. Seven planned, one per tier-3 vehicle:
+   Salt Flats (BUILT — long straights, light traffic, let 'er rip), Crest County (BUILT —
+   crest-launch hills, deer in the dips), The Coast Run (namesake finale: forest -> cliffs ->
+   desert -> night city, LAST unlock), Storm Run (rain mechanic), Wrong Way Express (oncoming
+   traffic), The School Run (chase the Greisen bus), Midnight Mystery (night random epic).
+   Tier-3 tracks appear as podium track-rewards only after all 8 standard tracks are unlocked.
+   WAVE 1 BUILT: Volt (boost meter on Space, +35% top speed, double accel, drains ~2.4s,
+   recharges ~16s; brake cancels) + Dakar (Space jump, 1.4s cooldown, clears potholes/dirt/
+   animals but NOT vehicles) + both tracks + shared systems: airborne physics (airT/airDur,
+   crest auto-launch via T.jumps), p2p finish (trackLen - 160 segs), mystery-bike podium
+   reward (random within tier via bikePoolNow), NEW BIKE reveal toast, 10-card race grid,
+   5-column garage.
+3. Conditions as course variants: night versions of existing tracks (deer eyes glowing!), rain
    (grip down, spray), fog on Big Sir.
-3. Championship/season mode: points across three races, season podium.
-4. Track features: crest jumps (airborne), tunnels (engine echo), oncoming-traffic lane, train
-   crossing. Likely home: a fifth course.
-5. Mystery Run social play: optional shared "daily course" once there's a backend (currently
+4. Championship/season mode: points across three races, season podium.
+5. Track features: tunnels (engine echo), train crossing. Crest jumps + oncoming lane now live
+   in the tier-3 slate.
+6. Mystery Run social play: optional shared "daily course" once there's a backend (currently
    no seed by Tim's explicit choice).
-6. Touch controls for phones (currently keyboard-only).
-7. PWA service worker for full offline/installable support (manifest exists already).
+7. Touch controls for phones (currently keyboard-only).
+8. PWA service worker for full offline/installable support (manifest exists already).
 
 ## Source history
 

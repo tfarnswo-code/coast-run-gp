@@ -187,6 +187,44 @@ const THEMES = [
         if (i % 7 === 2) s.spr = { t: 'lamp', o: (i % 14 === 2 ? -1.35 : 1.35) };
         if (Math.abs(s.curve) < 5 && i % 29 === 5) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
       }
+    } },
+  // --- Tier 3: Epic Runs — point-to-point, no laps. Indices 8+. ---
+  { name: 'Salt Flats', d1: 'Long straights · let er rip', d2: 'Light traffic · pure speed',
+    sky: '#BFE3F2', mtFar: '#A99BB5', mtNear: '#8B7E99', ridge: null, gA: '#E6E0CE', gB: '#DED8C4',
+    dirt: 'rgba(150,130,95,0.7)', cliff: false, hA1: 350, hA2: 120, hF1: 6, hF2: 14, sunR: 36,
+    lock: true, epic: true, p2p: true, traf: 5,
+    build: function () {
+      addRoad(0, 300, 0, 0); addRoad(60, 200, 60, 1.5); addRoad(0, 350, 0, 0); addRoad(70, 180, 70, -2);
+      addRoad(0, 400, 0, 0); addRoad(60, 160, 60, 2.5); addRoad(0, 300, 0, 0); addRoad(70, 200, 70, -1.5);
+      addRoad(0, 260, 0, 0); addRoad(60, 150, 60, 2); addRoad(0, 170, 0, 0);
+    },
+    dec: function () {
+      for (let i = 0; i < N; i++) {
+        const s = segs[i];
+        if (i % 23 === 4) s.spr = { t: 'rock', o: (i % 2 ? 1 : -1) * (1.8 + (i * 5 % 6) / 5) };
+        else if (i % 17 === 8) s.spr = { t: 'shrub', o: (i % 2 ? -1 : 1) * (2.2 + (i * 3 % 6) / 4) };
+        if (Math.abs(s.curve) < 5 && i % 223 === 60) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
+      }
+    } },
+  { name: 'Crest County', d1: 'Every crest launches you', d2: 'Deer hide in the dips',
+    sky: '#8FD0E8', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: '#7FAE82', gA: '#7CB85A', gB: '#70AC50',
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2600, hA2: 2800, hF1: 8, hF2: 38, sunR: 28,
+    lock: true, epic: true, p2p: true, jumps: true, traf: 8,
+    build: function () {
+      addRoad(0, 200, 0, 0); addRoad(40, 120, 40, 3); addRoad(0, 200, 0, 0); addRoad(50, 140, 50, -3.5);
+      addRoad(0, 240, 0, 0); addRoad(40, 100, 40, 2.5); addRoad(0, 220, 0, 0); addRoad(50, 120, 50, -2.5);
+      addRoad(0, 260, 0, 0); addRoad(40, 110, 40, 4); addRoad(0, 200, 0, 0); addRoad(40, 100, 40, -3);
+      addRoad(0, 170, 0, 0);
+    },
+    dec: function () {
+      for (let i = 0; i < N; i++) {
+        const s = segs[i];
+        if (i % 13 === 5) s.spr = { t: (i % 26 === 5) ? 'pine' : 'tree', o: (i % 2 ? 1 : -1) * (1.6 + (i * 7 % 6) / 6) };
+        else if (i % 11 === 0) s.spr = { t: 'bush', o: (i % 2 ? -1 : 1) * (2.1 + (i * 3 % 6) / 4) };
+        if (Math.abs(s.curve) < 5 && i % 89 === 17) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
+        if (i % 197 === 60 && Math.abs(s.curve) < 4) s.animal = { t: 'deer', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
+      }
+      dirtRuns(3, 20, 30);
     } }
 ];
 
@@ -221,7 +259,12 @@ const BIKES = [
   { name: 'Big Hog', kind: 'hog', tier: 2, col: '#1c1c22', col2: '#b9bdc4', snd: 'hog', ts: 1.12, ac: 0.92, br: 0.95, hd: 0.9, hz: 0.85, tough: 0.95, armor: 2,
     bars: [0.5, 0.8, 0.5, 1, 0.85, 0.45], fl: 'An armored couch at 290' },
   { name: 'Superbike', kind: 'rice', tier: 2, col: '#7F77DD', col2: '#FAC775', snd: 'rice', ts: 1.22, ac: 1.3, br: 1.1, hd: 1.3, hz: 0.2, tough: 0.2, armor: 0,
-    bars: [0.95, 1, 0.65, 0.15, 0.2, 0.9], fl: 'Barely street legal' }
+    bars: [0.95, 1, 0.65, 0.15, 0.2, 0.9], fl: 'Barely street legal' },
+  // --- Tier 3: gimmick machines. sp = special on SPACE ---
+  { name: 'Volt', kind: 'volt', tier: 3, col: '#E8EAF0', col2: '#4DD8E8', snd: 'volt', ts: 1.18, ac: 1.3, br: 1.1, hd: 1.15, hz: 0.3, tough: 0.4, armor: 0, sp: 'boost',
+    bars: [1, 0.85, 0.65, 0.25, 0.3, 0.75], fl: 'Silent. Then... YIKES!' },
+  { name: 'Dakar', kind: 'dakar', tier: 3, col: '#2E6FB8', col2: '#E24B4A', snd: 'enduro', ts: 1.0, ac: 1.1, br: 1.25, hd: 1.25, hz: 0.95, tough: 0.8, armor: 0, sp: 'jump',
+    bars: [0.65, 0.6, 0.85, 0.7, 1, 0.85], fl: 'Press space — flies over trouble' }
 ];
 
 // Engine voices: f0 base Hz, fr rev range, fg per-gear bump, r2 second-osc ratio,
@@ -230,7 +273,8 @@ const SND = {
   cafe:   { f0: 62, fr: 150, fg: 12, r2: 1.5,  flt: 820,  t1: 'sawtooth', t2: 'square',   chug: 0 },
   hog:    { f0: 36, fr: 70,  fg: 6,  r2: 0.5,  flt: 380,  t1: 'sawtooth', t2: 'square',   chug: 1 },
   enduro: { f0: 88, fr: 200, fg: 10, r2: 1.98, flt: 1300, t1: 'square',   t2: 'square',   chug: 0 },
-  rice:   { f0: 95, fr: 280, fg: 18, r2: 2.02, flt: 2100, t1: 'sawtooth', t2: 'sawtooth', chug: 0 }
+  rice:   { f0: 95, fr: 280, fg: 18, r2: 2.02, flt: 2100, t1: 'sawtooth', t2: 'sawtooth', chug: 0 },
+  volt:   { f0: 480, fr: 900, fg: 60, r2: 1.005, flt: 3200, t1: 'sine',    t2: 'sine',     chug: 0, ev: 1 }
 };
 
 const STATL = ['Accel', 'Top speed', 'Braking', 'Toughness', 'Terrain', 'Handling'];
