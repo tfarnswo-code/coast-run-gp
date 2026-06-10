@@ -108,11 +108,24 @@ player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After
 
 ## Backlog (discussed with Tim, in rough priority order)
 
-1. Tier-3 "gimmick" bikes — Tim loves this direction. Candidates: GP500 two-stroke with a powerband
-   (sluggish low, explosive high), silent electric hyperbike (instant torque, wind-only sound),
-   Rat Bike (mediocre stats, 3 armor, near-instant crash recovery), Dakar racer (dirt speeds it up).
-   Possible final unlock: a custom bike built from a stat budget. Unlock via feats (win all courses,
-   crash-free race, etc.) rather than collection — turns endgame into challenges.
+1. Tier-3 "gimmick" vehicles — SPECS AGREED WITH TIM (June 10 2026), not yet built. Seven
+   vehicles from Tim's pixel mockups. SPACE = the bike's special, one per vehicle:
+   - Police Bike: siren parts traffic. Nitro-style meter — drains in use, recharges slowly.
+     Space toggles on/off; watch the gauge.
+   - Electric Bike: "Yikes!" boost button (Tesla-hyperspace joke), limited time-of-use meter,
+     instant torque, near-silent (wind only).
+   - Harley Trike: life-farming machine — potholes can't kick it, 3 armor, finishes = +1 life,
+     but worst handling and you almost certainly won't podium.
+   - Dakar Rally: JUMP on Space — hops over potholes/dirt/animals (not vehicles). Crest-jump
+     physics; airborne timer + shadow stays grounded.
+   - Vespa: joke bike — best braking in the game, great handling, comically slow.
+   - Dune Buggy: wide hitbox (hits traffic easily), otherwise a slightly improved, more
+     durable Enduro.
+   - Steampunk: boiler pressure — speed climbs without limit while throttle held and no
+     braking/crashing; any brake/crash dumps pressure to zero.
+   UNLOCKS (replaces feat idea): podium "new bike" reward becomes a RANDOM bike from the
+   current tier — all tier 1 before tier 2 starts appearing, all 8 standard bikes before
+   tier 3 starts. Some useful, some just fun, that's the point.
 2. Conditions as course variants: night versions of existing tracks (deer eyes glowing!), rain
    (grip down, spray), fog on Big Sir.
 3. Championship/season mode: points across three races, season podium.
