@@ -13,6 +13,21 @@ programmer, so explain changes step by step and keep his design rules intact.
   forgiving (see collision constants in `main.js`).
 - Tim approves "silly graphical choices" by default and critiques after seeing them.
 
+## Pixel-art sprite system (js/pixelart.js)
+
+All sprites (player bikes, rivals, traffic, animals, scenery) are pixel art authored as
+character grids — one char = one pixel, '.' = transparent, chars map to a shared palette
+(`PXPAL`) plus per-variant dynamic colors (bike main/accent, rival/traffic colors, brake
+light). Grids are pre-rendered once per color variant to offscreen canvases (`pxSprite`,
+cached) and blitted bottom-center-anchored with nearest-neighbor scaling (`pxBlit`) so
+pixels stay chunky at any draw size. Symmetric rear-view sprites are authored as the LEFT
+half only and mirrored by the engine (`half: true`). Player bikes have two sprite sets:
+rear view (racing, `PX_PLAYER`) and side view (garage/reward cards, `PXS_PLAYER`,
+drawn via `drawBikeSide`), each with distinct tier-1/tier-2 grids (Big Hog gets ape
+hangers + saddlebags, Enduro Pro a number plate, Superbike winglets). Art direction is
+Tim's pixel mockups (June 2026): black outlines, silly-cute, 80s arcade. UI text is
+monospace to match.
+
 ## How the rendering works (js/sprites.js + render() in main.js)
 
 Classic OutRun-style pseudo-3D. The track is a flat array `segs[]` of segments (200 units long).

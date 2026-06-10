@@ -492,37 +492,37 @@ function drawHud() {
   if (state === 'race' || state === 'count') {
     cx.fillStyle = 'rgba(20,24,32,0.72)';
     rr(12, 12, 150, 32, 8); cx.fill(); rr(W - 122, 12, 110, 32, 8); cx.fill(); rr(W / 2 - 62, 12, 124, 32, 8); cx.fill();
-    cx.fillStyle = '#fff'; cx.font = '500 14px system-ui'; cx.textAlign = 'left';
+    cx.fillStyle = '#fff'; cx.font = '500 14px monospace'; cx.textAlign = 'left';
     cx.fillText('Lap ' + Math.min(curLap + 1, 3) + '/3   ' + fmt(raceT), 24, 29);
     cx.textAlign = 'right';
     const rank = 1 + rivals.filter(r => r.z > position).length;
     cx.fillText('Pos ' + rank + '/13', W - 24, 29);
-    cx.font = '11px system-ui'; cx.textAlign = 'left'; cx.fillText('Lives', W / 2 - 50, 29);
+    cx.font = '11px monospace'; cx.textAlign = 'left'; cx.fillText('Lives', W / 2 - 50, 29);
     for (let i = 0; i < Math.max(3, lives); i++) drawLifeIcon(W / 2 - 6 + i * 22, 28, i < lives);
     cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(W - 152, H - 52, 140, 40, 8); cx.fill();
-    cx.fillStyle = '#fff'; cx.font = '500 22px system-ui'; cx.textAlign = 'right';
+    cx.fillStyle = '#fff'; cx.font = '500 22px monospace'; cx.textAlign = 'right';
     cx.fillText(Math.round(speed / maxSpeed * 280), W - 82, H - 32);
-    cx.font = '11px system-ui'; cx.fillText('km/h', W - 52, H - 30);
+    cx.font = '11px monospace'; cx.fillText('km/h', W - 52, H - 30);
     const gear = speed < 200 ? 'N' : String(1 + Math.min(5, Math.floor(speed / (maxSpeed * B().ts) * 6)));
-    cx.font = '500 18px system-ui'; cx.fillText(gear, W - 24, H - 33);
-    cx.font = '11px system-ui'; cx.fillText('gear', W - 20, H - 44);
+    cx.font = '500 18px monospace'; cx.fillText(gear, W - 24, H - 33);
+    cx.font = '11px monospace'; cx.fillText('gear', W - 20, H - 44);
     cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 40, armorLeft > 0 ? 150 : 110, 28, 8); cx.fill();
-    cx.fillStyle = '#fff'; cx.font = '11px system-ui'; cx.textAlign = 'left';
+    cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.textAlign = 'left';
     cx.fillText(B().name + (armorLeft > 0 ? ' · armor ' + armorLeft : ''), 24, H - 26);
     if (muted) {
       cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 74, 72, 26, 8); cx.fill();
-      cx.fillStyle = '#fff'; cx.font = '11px system-ui'; cx.fillText('muted', 24, H - 61);
+      cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.fillText('muted', 24, H - 61);
     }
     if (crashing) {
-      cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 34px system-ui';
+      cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 34px monospace';
       cx.fillText(fell ? 'Over the cliff!' : 'Crash!', W / 2, H * 0.32);
     } else if (staggerT > 0) {
-      cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 26px system-ui';
+      cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 26px monospace';
       cx.fillText('Shrugged it off!', W / 2, H * 0.32);
     }
   }
   if (state === 'count') {
-    cx.textAlign = 'center'; cx.font = '500 64px system-ui';
+    cx.textAlign = 'center'; cx.font = '500 64px monospace';
     cx.fillStyle = T.night ? '#fff' : 'rgba(20,24,32,0.85)';
     const n = Math.ceil(cd);
     cx.fillText(cd > 0 ? String(n) : 'GO!', W / 2, H * 0.35);
@@ -530,83 +530,83 @@ function drawHud() {
   if (state === 'ready') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 24px system-ui'; cx.fillText('Coast Run GP', W / 2, 30);
-    cx.font = '12px system-ui'; cx.fillStyle = '#B4B2A9'; cx.fillText('Choose your course · tracks unlocked: ' + unlockedT.length + '/8 · bikes: ' + owned.length + '/8', W / 2, 56);
-    cx.font = '11px system-ui'; cx.textAlign = 'right'; cx.fillStyle = '#B4B2A9'; cx.fillText('Lives', W - 110, 28);
+    cx.font = '500 24px monospace'; cx.fillText('Coast Run GP', W / 2, 30);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Choose your course · tracks unlocked: ' + unlockedT.length + '/8 · bikes: ' + owned.length + '/8', W / 2, 56);
+    cx.font = '11px monospace'; cx.textAlign = 'right'; cx.fillStyle = '#B4B2A9'; cx.fillText('Lives', W - 110, 28);
     for (let i = 0; i < Math.max(3, lives); i++) drawLifeIcon(W - 94 + i * 18, 28, i < lives);
     for (let i = 0; i < THEMES.length; i++) {
       drawCourseCard(i, 30 + (i % 4) * 160, 86 + Math.floor(i / 4) * 128);
     }
-    cx.fillStyle = '#FAC775'; cx.font = '500 13px system-ui'; cx.textAlign = 'center';
+    cx.fillStyle = '#FAC775'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
     cx.fillText('← → choose · enter for the garage · any finish = +1 life · podium = bonus reward', W / 2, H - 20);
   }
   if (state === 'garage') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 24px system-ui'; cx.fillText('Garage', W / 2, 32);
-    cx.font = '12px system-ui'; cx.fillStyle = '#B4B2A9'; cx.fillText('Racing ' + T.name + ' — pick your ride', W / 2, 56);
+    cx.font = '500 24px monospace'; cx.fillText('Garage', W / 2, 32);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Racing ' + T.name + ' — pick your ride', W / 2, 56);
     for (let i = 0; i < owned.length; i++) {
       const bk = BIKES[owned[i]];
       const gx = 30 + (i % 4) * 160, gy = 78 + Math.floor(i / 4) * 108;
       cx.fillStyle = '#222a38'; rr(gx, gy, 150, 98, 10); cx.fill();
-      drawPlayerBike(gx + 75, gy + 72, 34, bk, 0, false);
-      cx.fillStyle = '#fff'; cx.font = '500 13px system-ui'; cx.textAlign = 'center';
+      drawBikeSide(gx + 75, gy + 72, 96, bk);
+      cx.fillStyle = '#fff'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
       cx.fillText(bk.name, gx + 75, gy + 86);
-      if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px system-ui'; cx.fillText('Tier 2', gx + 75, gy + 12); }
+      if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px monospace'; cx.fillText('Tier 2', gx + 75, gy + 12); }
       if (selG === i) { cx.strokeStyle = '#FAC775'; cx.lineWidth = 2.5; rr(gx, gy, 150, 98, 10); cx.stroke(); }
     }
     const sb = BIKES[owned[selG]];
     cx.fillStyle = '#222a38'; rr(30, H - 100, W - 60, 86, 10); cx.fill();
-    cx.fillStyle = '#fff'; cx.font = '500 15px system-ui'; cx.textAlign = 'left';
+    cx.fillStyle = '#fff'; cx.font = '500 15px monospace'; cx.textAlign = 'left';
     cx.fillText(sb.name, 50, H - 80);
-    cx.fillStyle = '#B4B2A9'; cx.font = '12px system-ui';
+    cx.fillStyle = '#B4B2A9'; cx.font = '12px monospace';
     cx.fillText(sb.fl + (sb.armor ? ' · absorbs ' + sb.armor + ' crash' + (sb.armor > 1 ? 'es' : '') + ' per race' : ''), 50, H - 60);
     drawStatBars(sb, 250, H - 76);
-    cx.fillStyle = '#FAC775'; cx.font = '500 12px system-ui'; cx.textAlign = 'left';
+    cx.fillStyle = '#FAC775'; cx.font = '500 12px monospace'; cx.textAlign = 'left';
     cx.fillText('enter: race · b: back', 50, H - 32);
   }
   if (state === 'reward') {
     cx.fillStyle = 'rgba(15,18,26,0.88)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 26px system-ui'; cx.fillText('Podium reward — choose one', W / 2, 52);
+    cx.font = '500 26px monospace'; cx.fillText('Podium reward — choose one', W / 2, 52);
     const tot = rewardOpts.length * 160 - 10, x0 = (W - tot) / 2;
     for (let i = 0; i < rewardOpts.length; i++) {
       const o = rewardOpts[i], gx = x0 + i * 160;
       cx.fillStyle = '#222a38'; rr(gx, 110, 150, 155, 10); cx.fill();
       if (o.t === 'life') {
         cx.save(); cx.translate(gx + 75, 165); cx.scale(2.2, 2.2); cx.translate(-(gx + 75), -165); drawLifeIcon(gx + 75, 165, true); cx.restore();
-        cx.fillStyle = '#fff'; cx.font = '500 14px system-ui';
+        cx.fillStyle = '#fff'; cx.font = '500 14px monospace';
         cx.fillText('Extra life', gx + 75, 220);
-        cx.fillStyle = '#B4B2A9'; cx.font = '11px system-ui';
+        cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
         cx.fillText('Live to wreck again', gx + 75, 240);
       } else if (o.t === 'bike') {
         const bk = BIKES[o.b];
-        drawPlayerBike(gx + 75, 190, 38, bk, 0, false);
-        cx.fillStyle = '#fff'; cx.font = '500 14px system-ui';
+        drawBikeSide(gx + 75, 198, 118, bk);
+        cx.fillStyle = '#fff'; cx.font = '500 14px monospace';
         cx.fillText(bk.name, gx + 75, 220);
-        cx.fillStyle = '#B4B2A9'; cx.font = '11px system-ui';
+        cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
         cx.fillText(bk.fl, gx + 75, 240);
-        if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px system-ui'; cx.fillText('Tier 2', gx + 75, 125); }
+        if (bk.tier === 2) { cx.fillStyle = '#FAC775'; cx.font = '10px monospace'; cx.fillText('Tier 2', gx + 75, 125); }
       } else {
         const th = THEMES[o.k];
         cx.fillStyle = th.sky; cx.fillRect(gx + 18, 135, 114, 46);
         cx.fillStyle = th.night ? th.mtFar : th.mtNear;
         if (th.night) { cx.fillRect(gx + 28, 148, 12, 33); cx.fillRect(gx + 48, 142, 16, 39); cx.fillRect(gx + 72, 150, 12, 31); cx.fillRect(gx + 92, 144, 16, 37); }
         else { cx.beginPath(); cx.moveTo(gx + 22, 181); cx.lineTo(gx + 60, 146); cx.lineTo(gx + 100, 181); cx.fill(); }
-        cx.fillStyle = '#fff'; cx.font = '500 14px system-ui';
+        cx.fillStyle = '#fff'; cx.font = '500 14px monospace';
         cx.fillText(th.name, gx + 75, 220);
-        cx.fillStyle = '#B4B2A9'; cx.font = '11px system-ui';
+        cx.fillStyle = '#B4B2A9'; cx.font = '11px monospace';
         cx.fillText('New course unlocked', gx + 75, 240);
       }
       if (selR === i) { cx.strokeStyle = '#FAC775'; cx.lineWidth = 2.5; rr(gx, 110, 150, 155, 10); cx.stroke(); }
     }
-    cx.fillStyle = '#FAC775'; cx.font = '500 15px system-ui';
+    cx.fillStyle = '#FAC775'; cx.font = '500 15px monospace';
     cx.fillText('← → choose · enter to claim', W / 2, H - 60);
   }
   if (state === 'over' && finalRank <= 3) {
     cx.fillStyle = 'rgba(20,24,32,0.82)'; rr(W / 2 - 230, H * 0.08, 460, H * 0.84, 14); cx.fill();
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 28px system-ui';
+    cx.font = '500 28px monospace';
     cx.fillText(finalRank === 1 ? 'You won on ' + T.name + '!' : 'Podium at ' + T.name + '!', W / 2, H * 0.17);
     const t = performance.now() / 1000;
     const baseY = H * 0.72;
@@ -615,18 +615,18 @@ function drawHud() {
     for (let i = 2; i >= 0; i--) {
       const s = slots[i];
       cx.fillStyle = podCols[i]; cx.fillRect(s.x - 40, baseY - s.h, 80, s.h);
-      cx.fillStyle = '#444441'; cx.font = '500 22px system-ui';
+      cx.fillStyle = '#444441'; cx.font = '500 22px monospace';
       cx.fillText(s.n, s.x, baseY - s.h / 2);
       const pc = podiumCols[i];
       if (pc) drawStandRider(s.x, baseY - s.h, pc.col, pc.me, t);
     }
     if (finalRank === 1) drawCup(W / 2 - 150, H * 0.2, 30);
-    cx.fillStyle = '#fff'; cx.font = '14px system-ui';
+    cx.fillStyle = '#fff'; cx.font = '14px monospace';
     const best = Math.min.apply(null, lapTimes);
     cx.fillText('Total ' + fmt(raceT) + ' · best lap ' + fmt(best), W / 2, H * 0.79);
     cx.fillStyle = '#9FE1CB';
     cx.fillText((bonusLife ? 'Finish bonus +1 life (' + lives + ' in hand)' : 'Lives full (' + lives + ')') + (pendingReward ? ' · reward awaits' : ''), W / 2, H * 0.845);
-    cx.fillStyle = '#FAC775'; cx.font = '500 15px system-ui';
+    cx.fillStyle = '#FAC775'; cx.font = '500 15px monospace';
     cx.fillText('Click or press enter to continue', W / 2, H * 0.9);
     for (const c of conf) {
       cx.save(); cx.translate(c.x, c.y); cx.rotate(c.rot);
@@ -636,14 +636,14 @@ function drawHud() {
   } else if (state === 'over' || state === 'dead') {
     cx.fillStyle = 'rgba(20,24,32,0.78)'; rr(W / 2 - 210, H * 0.16, 420, H * 0.58, 14); cx.fill();
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
-    cx.font = '500 30px system-ui';
+    cx.font = '500 30px monospace';
     cx.fillText(state === 'dead' ? 'Wrecked!' : 'Race complete', W / 2, H * 0.27);
-    cx.font = '15px system-ui';
+    cx.font = '15px monospace';
     if (state === 'dead') {
       cx.fillText('You ran out of lives on lap ' + Math.min(curLap + 1, 3) + ' of ' + T.name + '.', W / 2, H * 0.38);
       cx.fillText('Time on track: ' + fmt(raceT), W / 2, H * 0.45);
       cx.fillStyle = '#F0997B'; cx.fillText('Career over — garage, tracks and lives reset', W / 2, H * 0.52);
-      cx.fillStyle = '#FAC775'; cx.font = '500 17px system-ui';
+      cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace';
       cx.fillText('Click or press enter — fresh start, cafe racer, 3 lives', W / 2, H * 0.64);
     } else {
       const best = Math.min.apply(null, lapTimes);
@@ -651,7 +651,7 @@ function drawHud() {
       cx.fillText('Total ' + fmt(raceT) + ' · best lap ' + fmt(best), W / 2, H * 0.46);
       cx.fillStyle = '#9FE1CB';
       cx.fillText(bonusLife ? 'You finished — +1 life (' + lives + ' in hand)' : 'You finished — lives already full (' + lives + ')', W / 2, H * 0.53);
-      cx.fillStyle = '#FAC775'; cx.font = '500 17px system-ui';
+      cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace';
       cx.fillText('Click or press enter for course select', W / 2, H * 0.64);
     }
   }
