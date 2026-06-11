@@ -18,10 +18,10 @@ function quad(x1, w1, y1, x2, w2, y2, col) {
 }
 
 // Generic sportbike used for all 12 rivals — pixel sprite, palette-swapped per rival
-function drawMoto(bx, by, w, col, ln, brake) {
+function drawMoto(bx, by, w, col, ln, brake, rot) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(bx, by + 2, w * 0.6, w * 0.11, 0, 0, 7); cx.fill();
   const img = pxSprite('rival', PX_RIVAL, { 1: col, 2: hexMix(col, 0.55), r: brake ? '#FF3B30' : '#8a3434' }, true);
-  pxBlit(img, bx, by, w / 17.8, ln * 0.4);
+  pxBlit(img, bx, by, w / 17.8, rot !== undefined ? rot : ln * 0.4);   // rot = spilled rival lying down
 }
 
 // Tier-safe grid lookup (tier-3 kinds have a single grid)
@@ -36,6 +36,29 @@ function drawPlayerBike(bx, by, w, bk, ln, brake, airOff) {
   const grid = bikeGrid(PX_PLAYER, bk);
   const img = pxSprite('pb-' + bk.kind + bk.tier + (brake ? 'B' : ''), grid, bikePal(bk, brake), true);
   pxBlit(img, bx, by - a, w / 21, ln * 0.4);
+  if (bk.sp === 'siren') drawSirenLights(bx, by - a, w / 21, ln * 0.4);
+}
+
+// Flashing police light bar, drawn over the rear-view bike in the same transform so it
+// leans and jumps with it. Bright alternating red/blue when the siren is engaged; dim
+// but lit when off, so the Police bike always reads as the Police bike.
+function drawSirenLights(bx, by, s, rot) {
+  const on = typeof sirenOn !== 'undefined' && sirenOn;
+  const phase = Math.floor(performance.now() / 130) % 2;   // ~4 flips/sec
+  const ly = -s * 17, r = s * 1.7, off = s * 2.4;
+  cx.save();
+  cx.translate(bx, by); cx.rotate(rot);
+  for (let i = 0; i < 2; i++) {
+    const isRed = i === 0;
+    const lx = (isRed ? -1 : 1) * off;
+    const lit = on ? (phase === (isRed ? 0 : 1)) : true;
+    const col = isRed ? '#FF3B30' : '#2E7BFF';
+    if (lit && on) { cx.globalAlpha = 0.45; cx.fillStyle = col; cx.beginPath(); cx.arc(lx, ly, r * 2.2, 0, 7); cx.fill(); cx.globalAlpha = 1; }
+    cx.fillStyle = lit ? col : (isRed ? '#6e1d18' : '#173360');
+    cx.fillRect(lx - r, ly - r * 0.75, r * 2, r * 1.5);
+  }
+  cx.fillStyle = '#14141b'; cx.fillRect(-off - r - s * 0.3, ly + r * 0.8, off * 2 + r * 2 + s * 0.6, s * 0.7); // bar base
+  cx.restore();
 }
 
 // Player bike (side view, riderless) — garage and reward cards. w = target drawn width.
@@ -43,6 +66,16 @@ function drawBikeSide(bx, by, w, bk) {
   const grid = bikeGrid(PXS_PLAYER, bk);
   const img = pxSprite('sb-' + bk.kind + bk.tier, grid, bikePal(bk, false), false);
   pxBlit(img, bx, by, w / 28, 0);
+  if (bk.sp === 'siren') {
+    // little beacon flashing on the rear cowl so the Police bike reads in the garage too
+    const sc = w / 28, phase = Math.floor(performance.now() / 130) % 2, r = sc * 1.5;
+    const lx = bx - w * 0.2, ly = by - 13 * sc;
+    for (let i = 0; i < 2; i++) {
+      const isRed = i === 0, lit = phase === (isRed ? 0 : 1);
+      cx.fillStyle = lit ? (isRed ? '#FF3B30' : '#2E7BFF') : (isRed ? '#6e1d18' : '#173360');
+      cx.beginPath(); cx.arc(lx + (isRed ? -r : r), ly, r, 0, 7); cx.fill();
+    }
+  }
 }
 
 // Crashed bike — the riderless side view tumbling/sliding on its side.
@@ -91,20 +124,46 @@ function drawTruck(x, y, w, col) {
   pxBlit(pxSprite('truck', PX_TRUCK, { 1: col, 2: hexMix(col, 0.6), 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
 }
 
+// Front views for oncoming traffic (headlights glow via the static 'f' palette colour).
+function drawCarFront(x, y, w, col) {
+  cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('carF', PX_CAR_F, { 1: col, 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+}
+
+function drawTruckFront(x, y, w, col) {
+  cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('truckF', PX_TRUCK_F, { 1: col, 2: hexMix(col, 0.6), 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+}
+
 function drawBus(x, y, w, col) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('bus', PX_BUS, { 1: col, 2: hexMix(col, 0.6) }, true), x, y, w / 20, 0);
 }
 
-// The Greisen school bus — one per run, full-grid sprite so the name reads.
-function drawSchoolBus(x, y, w) {
+// The Greisen school bus — full-grid sprite so the name reads. On The School Run the
+// whole fleet is out; stopped buses get alternating red wig-wag lights up top.
+function drawSchoolBus(x, y, w, stopped) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.6, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('sbus', PX_SBUS, null, false), x, y, w / 24, 0);
+  if (stopped) {
+    const ph = Math.floor(performance.now() / 350) % 2;
+    const ly = y - w * 0.92, r = Math.max(1.5, w * 0.05);
+    cx.fillStyle = ph ? '#FF3B30' : '#7a1d18'; cx.fillRect(x - w * 0.52 - r, ly, r * 2, r * 2);
+    cx.fillStyle = ph ? '#7a1d18' : '#FF3B30'; cx.fillRect(x + w * 0.52 - r, ly, r * 2, r * 2);
+    if (ph) { cx.globalAlpha = 0.3; cx.fillStyle = '#FF3B30'; cx.beginPath(); cx.arc(x - w * 0.52, ly + r, r * 3, 0, 7); cx.fill(); cx.globalAlpha = 1; }
+    else { cx.globalAlpha = 0.3; cx.fillStyle = '#FF3B30'; cx.beginPath(); cx.arc(x + w * 0.52, ly + r, r * 3, 0, 7); cx.fill(); cx.globalAlpha = 1; }
+  }
+}
+
+// The Crossing Guard — stationary hazard on The School Run. Hi-vis vest, STOP sign.
+function drawGuard(x, y, w) {
+  cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 1, w * 0.5, w * 0.09, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('guard', PX_GUARD, null, false), x, y, w / 11, 0);
 }
 
 function drawDeer(x, y, w) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 1, w * 0.5, w * 0.09, 0, 0, 7); cx.fill();
-  pxBlit(pxSprite('deer', PX_DEER, null, true), x, y, w / 11, 0);
+  pxBlit(pxSprite('deer', PX_DEER, null, true), x, y, w / 14, 0);
 }
 
 function drawCow(x, y, w) {

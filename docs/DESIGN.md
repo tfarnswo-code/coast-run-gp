@@ -88,6 +88,27 @@ Typing CHEATER on any screen unlocks all bikes + tracks and refills lives (testi
 persists to the save — R on course select resets). Crash particles: gold sparks trail the
 bike, RED blood (not dust) sprays where the rider lands, per Tim.
 
+## Rival driver AI (June 10 2026 — js/main.js: relZ/rivalBlocker/rivalPlan/rivalDrive)
+
+Rivals are drivers, not metronomes. Each has: cruise (personality top speed, base
+0.46+i·0.027 ×rmul — ~+11% over the old constants since avoidance costs time), real
+speed/accel, skill 0.35–0.95 (backmarkers clumsy, leaders sharp), and a re-plan timer
+(0.12–0.45 s — clumsy riders think slowly, which is how they crash). Every re-plan they
+scan ahead (look ∝ skill & speed) for traffic (incl. oncoming/stopped), other rivals,
+the player, animals/guards, and potholes; they swerve to a clear lane, else brake and
+follow (potholes are "soft": dodge if possible, never brake). Failures are organic —
+reaction latency at high closing speeds. Impacts: stumble (wobble + speed loss) or full
+SPILL (bike lies flat ~1.5–3 s, rot via drawMoto's 7th arg, then recovers); oncoming
+hits and animals always spill. Spilled rivals are obstacles others avoid. Brake lights
+light while braking (drawMoto brake param).
+
+Player contact (Tim's spec): side-by-side rubbing = pothole-style kick for BOTH (player:
+steer jerk + bumpT + speed×0.94; rival: shove + stumble, clumsy ones spill) — NOT a
+crash. Rear-ending a rival squarely (lat < 0.11, closing > 1800) IS still a real crash;
+the hit window sweeps by closing·dt so fast approaches can't tunnel through. No
+rubber-banding (Tim's call — honest pace). Salt Flats rivalMul retuned 1.7→1.55 for the
+faster cruise base (top rival ≈1.17×maxSpeed — takes CPA999/Chippy flat-out to pass).
+
 ## Game state machine (js/main.js)
 
 `ready` (course select) → `garage` (bike select) → `count` → `race` → `over` (podium ceremony or
@@ -134,11 +155,46 @@ player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After
    traffic), The School Run (chase the Greisen bus), Midnight Mystery (night random epic).
    Tier-3 tracks appear as podium track-rewards only after all 8 standard tracks are unlocked.
    WAVE 1 BUILT: Volt (boost meter on Space, +35% top speed, double accel, drains ~2.4s,
-   recharges ~16s; brake cancels) + Dakar (Space jump, 1.4s cooldown, clears potholes/dirt/
-   animals but NOT vehicles) + both tracks + shared systems: airborne physics (airT/airDur,
-   crest auto-launch via T.jumps), p2p finish (trackLen - 160 segs), mystery-bike podium
-   reward (random within tier via bikePoolNow), NEW BIKE reveal toast, 10-card race grid,
-   5-column garage.
+   recharges ~16s; brake cancels) + Dakar (Space jump) + both tracks + shared systems:
+   airborne physics (airT/airDur, crest auto-launch via T.jumps), p2p finish (trackLen -
+   160 segs), mystery-bike podium reward (random within tier via bikePoolNow), NEW BIKE
+   reveal toast, 10-card race grid, 5-column garage.
+   WAVE 2 BUILT (June 10 2026): Police bike (kind 'police', sp 'siren' — Superbike stats
+   nudged up + a siren on Space that parts nearby traffic, incl. oncoming, toward the
+   shoulders; drains ~5s, recharges ~11s) + Wrong Way Express (theme oncoming:0.5, p2p —
+   two-way US-style road: with-traffic in the RIGHT lanes, oncoming in the LEFT lanes,
+   ~40% oncoming incl. trucks, never sharing a lane; player starts at playerN 0.4;
+   Salt Flats rivalMul 1.7 so podium demands a Superbike-class bike). New systems:
+   ONCOMING TRAFFIC (traffic.dir ±1, swept collision so fast closing doesn't tunnel,
+   front-view sprites PX_CAR_F/PX_TRUCK_F via drawCarFront/drawTruckFront) and SIREN parting
+   (eases traffic.off toward shoulders away from playerN). Buses + the Greisen bus always run
+   with the flow. Also this session: Dakar jump made much higher (airDur 0.8+, lift 36+82·airDur)
+   and now clears EVERYTHING incl. vehicles, with a pothole-style steering kick + thud on
+   landing (Dakar only, bk.sp==='jump'). Per-track rival speed via rmul in reset()
+   (tier-2 ×1.06, tier-3 ×1.16, Salt Flats theme rivalMul 1.32). Cafe Racer + Cafe Royale
+   nerfed slightly (ts/ac). Truck hitbox cw 0.33→0.27. Crash bike/rider sprites enlarged.
+   Deer + cow sprites redrawn (bigger, antlers/horns/eyes/spots — PX_DEER/PX_COW, deer
+   divisor 11→14). Mystery Run now commits to ONE biome per run (forest/desert/coast,
+   consistent throughout) instead of cycling all biomes every run.
+   WAVE 3 — TIER 3 COMPLETE (June 10 2026): all 15 bikes + all 15 tracks built.
+   Bikes: Trike (noPot — potholes can't kick it, 3 armor, hd 0.55, the survival machine,
+   NO extra life bonus by Tim's call), Vespa (br 1.6 best brakes, ts 0.62, joke bike),
+   Dune Buggy (wide: true — +0.07 collision pad vs everything, durable enduro-plus,
+   1 armor), Steampunk (sp 'steam': boiler pressure builds while stoking on throttle,
+   topS × (1 + steamP·0.045) UNBOUNDED; brake/crash/cliff dumps to zero; whistle at 8s,
+   smoke particles, BOILER/FULL STEAM HUD gauge). Races: Storm Run (rain: true — rain
+   streak overlay, brake ×0.7, steering ×0.85), The School Run (Tim's school-zone
+   redesign: school: true + oncoming — every 3rd vehicle a Greisen bus, every other bus
+   STOPPED on the right shoulder with red wig-wag lights, two-way traffic, PX_GUARD
+   crossing-guard static hazard holding a STOP sign, hit = crash), Midnight Mystery
+   (night + mystery random generator, one biome per run, fatal coast in the dark),
+   The Coast Run (coastrun: true — forest→cliffs→desert→night-city zones via per-segment
+   dec(), sky LERPS through the journey via coastSky()/hexLerp() in main.js, night mode
+   kicks in at 80%, LAST entry in THEMES = final unlock). Race select now 5×3 grid
+   (cards drawn at 0.813 scale; click hit-test matches). New engine voices: vespa
+   (ring-ding chug), buggy, steam (locomotive chuff). Tier-3 specials cheat sheet:
+   Volt=boost, Dakar=jump, Police=siren, Steampunk=passive boiler; Trike/Vespa/Buggy
+   are stat/flag gimmicks (noPot / brakes / wide).
 3. Conditions as course variants: night versions of existing tracks (deer eyes glowing!), rain
    (grip down, spray), fog on Big Sir.
 4. Championship/season mode: points across three races, season podium.

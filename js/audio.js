@@ -3,6 +3,7 @@
 // from the first click/enter in main.js.
 
 let AC = null, master = null, eng = null, windG = null, noiseBuf = null;
+let sirenOsc = null, sirenG = null;
 let muted = false;
 
 function initAudio() {
@@ -23,6 +24,10 @@ function initAudio() {
     const wf = AC.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 550;
     windG = AC.createGain(); windG.gain.value = 0;
     ws.connect(wf); wf.connect(windG); windG.connect(master); ws.start();
+    // Police siren — a single sine we wail in audioTick when the siren is on.
+    sirenOsc = AC.createOscillator(); sirenOsc.type = 'sine'; sirenOsc.frequency.value = 800;
+    sirenG = AC.createGain(); sirenG.gain.value = 0;
+    sirenOsc.connect(sirenG); sirenG.connect(master); sirenOsc.start();
     eng = { o1: o1, o2: o2, g: eg, f: ef, snd: '' };
   } catch (e) { AC = null; }
 }
@@ -105,4 +110,11 @@ function audioTick() {
   if (sc.ev) tg *= 0.2; // electric: barely audible whine, mostly wind
   eng.g.gain.setTargetAtTime(tg, t, 0.06);
   windG.gain.setTargetAtTime(racing ? sp * sp * 0.05 : 0, t, 0.1);
+  // Police siren wail: two-tone yelp swept by an LFO, only while the siren is engaged.
+  if (sirenOsc) {
+    const on = typeof sirenOn !== 'undefined' && sirenOn && racing && !crashing;
+    const wail = 760 + Math.sin(performance.now() / 220) * 230;
+    sirenOsc.frequency.setTargetAtTime(wail, t, 0.02);
+    sirenG.gain.setTargetAtTime(on && !muted ? 0.05 : 0, t, 0.06);
+  }
 }
