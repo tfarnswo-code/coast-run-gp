@@ -166,18 +166,29 @@ function drawDeer(x, y, w) {
   pxBlit(pxSprite('deer', PX_DEER, null, true), x, y, w / 14, 0);
 }
 
+// Full grid (not mirrored) so the Holstein patches read natural — and no face seam.
 function drawCow(x, y, w) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 1, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
-  pxBlit(pxSprite('cow', PX_COW, null, true), x, y, w / 14, 0);
+  pxBlit(pxSprite('cow', PX_COW, null, false), x, y, w / 14, 0);
+}
+
+// The squirrel — a furry pothole. Kicks you around; never crashes you.
+function drawSquirrel(x, y, w) {
+  cx.fillStyle = 'rgba(0,0,0,0.2)'; cx.beginPath(); cx.ellipse(x, y + 1, w * 0.5, w * 0.08, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('squir', PX_SQUIR, null, false), x, y, w / 9, 0);
 }
 
 function drawScenery(sp, x, y, w) {
   if (w < 2) return;
   if (sp.t === 'pine') pxBlit(pxSprite('pine', PX_PINE, null, true), x, y, w / 34, 0);
+  else if (sp.t === 'pine2') pxBlit(pxSprite('pine2', PX_PINE2, null, true), x, y, w / 32, 0);
   else if (sp.t === 'tree') pxBlit(pxSprite('tree', PX_TREE, null, false), x, y, w / 30, 0);
+  else if (sp.t === 'oak') pxBlit(pxSprite('oak', PX_OAK, null, false), x, y, w / 28, 0);
   else if (sp.t === 'bush') pxBlit(pxSprite('bush', PX_BUSH, null, false), x, y, w / 46, 0);
   else if (sp.t === 'shrub') pxBlit(pxSprite('shrub', PX_SHRUB, null, false), x, y, w / 46, 0);
   else if (sp.t === 'cactus') pxBlit(pxSprite('cactus', PX_CACTUS, null, false), x, y, w / 36, 0);
+  else if (sp.t === 'cactus2') pxBlit(pxSprite('cactus2', PX_CACTUS2, null, false), x, y, w / 33, 0);
+  else if (sp.t === 'barrel') pxBlit(pxSprite('barrel', PX_BARREL, null, false), x, y, w / 50, 0);
   else if (sp.t === 'rock') pxBlit(pxSprite('rock', PX_ROCK, null, false), x, y, w / 42, 0);
   else if (sp.t === 'lamp') {
     pxBlit(pxSprite('lamp', PX_LAMP, null, false), x, y, w / 26, 0);
@@ -292,14 +303,11 @@ function drawCourseCard(i, gx, gy) {
     cx.fillText('EPIC', gx + 138, gy + 14);
   }
   cx.fillStyle = locked ? '#888' : '#fff'; cx.font = '500 13px monospace'; cx.textAlign = 'center';
-  cx.fillText(th.name, gx + 75, gy + 50);
-  cx.font = '9px monospace'; cx.fillStyle = locked ? '#777' : '#B4B2A9';
-  cx.fillText(th.d1, gx + 75, gy + 65);
-  cx.fillText(th.d2, gx + 75, gy + 78);
+  cx.fillText(th.name, gx + 75, gy + 58);
   if (locked) {
     cx.fillStyle = 'rgba(15,18,26,0.55)'; rr(gx, gy, 150, 92, 10); cx.fill();
     cx.fillStyle = '#FAC775'; cx.font = '500 10px monospace'; cx.textAlign = 'center';
-    cx.fillText('Locked · podium reward', gx + 75, gy + 88);
+    cx.fillText('Locked · podium previous', gx + 75, gy + 82);
   }
   if (sel === i && !locked) { cx.strokeStyle = '#FAC775'; cx.lineWidth = 2.5; rr(gx, gy, 150, 92, 10); cx.stroke(); }
 }

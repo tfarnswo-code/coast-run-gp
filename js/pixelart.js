@@ -742,55 +742,81 @@ const PX_TRUCK_F = [
   '..kk..kk..'
 ];
 
-// ============================ WILDLIFE (half-grids) ============================
-// Front-facing, symmetric (half-grids). Richer than the originals: antlers, ears,
-// shaded muzzle, white chest, slim legs (deer); horns, ears, black blaze + spots,
-// pink snout with nostrils (cow).
+// ============================ WILDLIFE ============================
+// Redrawn 2026-06-11 to Tim's pixel reference: proper buck with a real antler
+// rack, lighter muzzle/inner ears, white chest and long slim legs (half-grid,
+// symmetric); Holstein cow as a FULL grid — asymmetric black patches, white
+// blaze, pink muzzle and udder, no mirror seam on the face.
 const PX_DEER = [
-  '..N.....kn.',
-  '..Nk...knnn',
-  '...Nk.knenn',
-  '....Nknennn',
-  '.....Nneenn',
-  '.....knenen',
-  '.....nkennn',
-  '.....nneenn',
-  '......nNNNn',
-  '......knwn.',
-  '......nnnn.',
-  '.....knnnn.',
-  '....knnnnnn',
-  '...knneewwn',
-  '...knnnewwn',
-  '...knnnnnnn',
-  '...knnneenn',
-  '....nn..nn.',
-  '....kn..kn.',
-  '....kn..kn.',
-  '....kk..kk.'
+  '..U......U...',
+  '..U..U...U...',
+  '..UU.U...U.U.',
+  '...UUU...U.U.',
+  '.....UU..UUU.',
+  '......UU.U...',
+  '.......UUU...',
+  '........UU...',
+  '...nnk...UU..',
+  '..kneen.nnnn.',
+  '..kneennnnnnn',
+  '...knnnnnnnnn',
+  '.....nnnknnnn',
+  '........nnnnn',
+  '........neenn',
+  '........neekk',
+  '.........nnnn',
+  '.........nnnn',
+  '.......nnnnww',
+  '.....nnnnnwww',
+  '....nnnnnnwww',
+  '....nnnnnnnww',
+  '....nnnnnnnnn',
+  '....Nnnnnnnnn',
+  '.....nn...nn.',
+  '.....nn...nn.',
+  '.....nn...nn.',
+  '.....kk...kk.',
+  '.....kk...kk.'
 ];
 
 const PX_COW = [
-  '..M.....kn.',
-  '..Mk...kmmm',
-  '...k..kmmmm',
-  '...kmmMMmmm',
-  '...kmmmmmmm',
-  '...kmkmwmmm',
-  '...kmmmmmmm',
-  '....kppppp.',
-  '....pkpppp.',
-  '....kpppp..',
-  '...kmmmmmm.',
-  '..kmmMMmmmm',
-  '..kmmMMmmmm',
-  '..kmmmmmmmm',
-  '..kmmmmMMmm',
-  '..kmmmmMMmm',
-  '..kmmmmmmmm',
-  '...kM..kM..',
-  '...kM..kM..',
-  '...kk..kk..'
+  '......UU...........UU.....',
+  '.....kUUk.........kUUk....',
+  '..MMk.kmmmmmmmmmmmm.kMMM..',
+  '.MMMMkmmmmmmmmmmmmmkMMMM..',
+  '..MMkmmMMmmmmmmMMmmmkMM...',
+  '.....mmMkMmmmmmMkMmm......',
+  '.....mmmmmmmmmmmmmmm......',
+  '.....mmppppppppppppm......',
+  '.....mpppkpppppkpppm......',
+  '......pppppppppppp........',
+  '....kmmmmmmmmmmmmmmmk.....',
+  '..kmmmMMMmmmmmmmmMMmmmk...',
+  '.kmmmMMMMMmmmmmMMMMmmmmk..',
+  '.kmmMMMMMMmmmmmMMMMMmmmmk.',
+  '.kmmMMMMMmmmmmmmMMMMMmmmk.',
+  '.kmmmMMMmmmmmmmmmMMMMmmmk.',
+  '.kmmmmmmmmmmmmmmmmMMmmmmk.',
+  '.kmmmmmmmmmmmmmmmmmmmmmk..',
+  '..kmmmmmmmpppppmmmmmmmk...',
+  '...mmm.mmmpkpkpmmm.mmm....',
+  '...kmm.kmm.ppp.kmm.mmk....',
+  '...kmm.kmm.....kmm.mmk....',
+  '...kMM.kMM.....kMM.MMk....',
+  '...kkk.kkk.....kkk.kkk....'
+];
+
+// The squirrel — tiny, big tail, parked in your lane like a furry pothole.
+const PX_SQUIR = [
+  '.......bbb.',
+  '......bbbbb',
+  '......bbbbb',
+  '.kk...bbbb.',
+  'kNkN..bbbb.',
+  'kNNNb.bbb..',
+  '.kNNbbbbb..',
+  '..NNNNNb...',
+  '..Nk.kNk...'
 ];
 
 // ============================ SCENERY ============================
@@ -870,6 +896,82 @@ const PX_ROCK = [
   'kQqqqqqqqqk',
   'kqqqqqqqqqk',
   '.kkqqqqqkk.'
+];
+
+// Broad old oak — wide rounded crown, thick trunk
+const PX_OAK = [
+  '.....kkkkkk.....',
+  '...kkFFFFFLkk...',
+  '..kFFLLLFFFFFk..',
+  '.kFLLLLLFFFFFFk.',
+  'kFLLLLLLFFFFFFFk',
+  'kFLLLLLFFFFFFFFk',
+  'kFFLLLFFFFFLLFFk',
+  'kFFFFFFFFFLLLFFk',
+  '.kFFFFFFFFFLLFk.',
+  '..kkFFFkkFFFkk..',
+  '....kuukuuk.....',
+  '.....kuuuk......',
+  '.....kuuuk......',
+  '.....kuuuk......',
+  '....kuuuuuk.....'
+];
+
+// Tall slim pine — a lankier cousin of PX_PINE (half-grid, mirrored)
+const PX_PINE2 = [
+  '......k',
+  '.....kG',
+  '.....kG',
+  '....kGG',
+  '.....kG',
+  '....kGG',
+  '...kGGG',
+  '....kGG',
+  '...kGGG',
+  '..kGGGG',
+  '...kGGG',
+  '..kGGGG',
+  '.kGGGGG',
+  '..kGGGG',
+  '.kGGGGG',
+  'kGGGGGG',
+  '.....ku',
+  '.....ku',
+  '.....ku',
+  '.....ku'
+];
+
+// Big old saguaro — taller, three arms, ribbed
+const PX_CACTUS2 = [
+  '......kck.......',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.kk..kcCck......',
+  'kcck.kcCck..kk..',
+  'kcCk.kcCck.kcck.',
+  'kcCk.kcCck.kcCk.',
+  'kcCck.kcCk.kcCk.',
+  '.kcCkcCcckkcCk..',
+  '..kkkcCcck.kk...',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.....kcCck......',
+  '.....kcCck......'
+];
+
+// Squat barrel cactus with a desert bloom on top
+const PX_BARREL = [
+  '....xx....',
+  '...kxxk...',
+  '..kccCck..',
+  '.kcCcCcck.',
+  '.kcCcCcck.',
+  '.kcCcCcck.',
+  '..kccCck..',
+  '...kkkk...'
 ];
 
 const PX_LAMP = [
@@ -1329,7 +1431,64 @@ const PXS_STEAM = [
   '..kttttk........kttttk......'
 ];
 
+// ============================ TIER 3: THE DUKE (Italian superbike) ============================
+// The reward for beating the game. Red bodywork (1), black accents (3), tall slim
+// tail with under-seat exhausts (S) — Panigale energy.
+const PX_DUKE = [
+  '........kk',
+  '......khhh',
+  '.....khhhh',
+  '.....khiih',
+  '.....khhhh',
+  '....kkkkkk',
+  '..kkjjjjjj',
+  '.kjjjjjjjj',
+  '.kjJjjjjjj',
+  'kSkjJjjjjj',
+  'kSkjJjjjjj',
+  '.kkjjjjjjj',
+  '..kjjjjjjj',
+  '..kjjjjjjj',
+  '...kjj3333',
+  '...kj11111',
+  '..k1111111',
+  '..k111rrrr',
+  '..k1113333',
+  '.k11111111',
+  'kddk1SS111',
+  'kddk1SS111',
+  'kbbk111111',
+  '.kkk111111',
+  '...kk11111',
+  '....k11111',
+  '.....ktttt',
+  '.....ktTtt',
+  '.....ktTtt',
+  '.....ktTtt',
+  '......kttt',
+  '.......kkk'
+];
+const PXS_DUKE = [
+  '.....kkkk...................',
+  '..SSk11111k.................',
+  '...k1111111kkkkk............',
+  '....k1111111111111kkk.......',
+  '.....k111111111111111ggk....',
+  '....k1555111111111111ggk....',
+  '...k15511kkkk331111111kk....',
+  '..k15511k33kk3311111111fk...',
+  '..k111kk33k...kk11111kkkk...',
+  '....kkkk......k1111kkkk.....',
+  '...kttttk......kkkttttk.....',
+  '..kttTtttk.......kttTtttk...',
+  '..ktT33Ttk.......ktT33Ttk...',
+  '..kttTtttk.......kttTtttk...',
+  '...kttttk.........kttttk....',
+  '....kkkk...........kkkk.....'
+];
+
 PX_PLAYER.trike = [PX_TRIKE]; PXS_PLAYER.trike = [PXS_TRIKE];
 PX_PLAYER.vespa = [PX_VESPA]; PXS_PLAYER.vespa = [PXS_VESPA];
-PX_PLAYER.buggy = [PX_BUGGY]; PXS_PLAYER.buggy = [PXS_BUGGY];
+PX_PLAYER.buggy = [PX_BUGGY]; PXS_PLAYER.buggy = [PXS_BUGGY];   // unused since The Duke arrived; kept for a future gimmick
 PX_PLAYER.steam = [PX_STEAM]; PXS_PLAYER.steam = [PXS_STEAM];
+PX_PLAYER.duke = [PX_DUKE]; PXS_PLAYER.duke = [PXS_DUKE];
