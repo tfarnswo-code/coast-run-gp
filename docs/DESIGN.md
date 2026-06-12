@@ -142,10 +142,18 @@ player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After
   50%-dirt Baja Apocalypse; also affects Baja Inferno's dirtRunsAll stretches.
 - **Night lighting.** Player beam originates at the FAIRING (`py-58`, narrow→wide
   trapezoid + lamp halo), keyed on `nightNow` so the Coast Run finale city gets it.
-  Rivals: headlight pool ahead + lit taillight (drawMoto night param, skipped while
-  spilled). Traffic: `tailLights()`/`headLights()` helpers in sprites.js — rear views
-  get red pairs, oncoming front views get warm-white glows. All draw calls in the
-  vehicle bucket pass `nightNow`.
+  Rivals: lit red taillight only (drawMoto night param, skipped while spilled) — a
+  headlight pool was tried, read as a halo over their heads, and Tim cut it.
+  Traffic: `tailLights()`/`headLights()` helpers in sprites.js — rear views get red
+  pairs, oncoming front views get warm-white glows. All draw calls in the vehicle
+  bucket pass `nightNow`.
+- **`T.oncFrac` — per-theme oncoming share** of two-way traffic (default 0.4): the
+  fraction of NON-BUS vehicles that face you, spread evenly via rounded Bresenham
+  over the eligible count in reset(). Bigger Sir 0.25 (Tim's asymmetric cut),
+  Wrong Way Express 0.55 (its identity). Buses always run with the flow.
+- **Starter-bike progression rule (Tim)**: the CB $450 (ts/ac 0.87) can podium
+  Upstate Run (`rivalMul: 0.96`, under the 1.04 tier-1 default) and nothing else —
+  every later course requires a garage upgrade.
 - **YIKES delivery is exponential**: while boosting, `speed += (cap-speed)*min(1,dt*2.2)`
   on top of normal accel — the doubled cap arrives in ~1s and doesn't need throttle held.
 

@@ -212,9 +212,11 @@ function bjDec(potMod, cowMod, runs, maxRun) {
 
 // --- Course catalog. Indices 0-3 unlocked from the start; 4-7 are podium rewards. ---
 const THEMES = [
+  // rivalMul below the tier-1 default (1.04): the only course the nerfed CB $450
+  // can podium — see the progression rule on the bike catalog.
   { name: 'Upstate Run', d1: 'Forest hills · balanced', d2: 'Dirt, potholes and deer',
     sky: '#7EC4E8', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: '#7FAE82', gA: '#6AAE4E', gB: '#5F9F45',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28, rivalMul: 0.96,
     build: upBuild, dec: function () { upDec(353); } },
   { name: 'Big Sir', d1: 'Pacific cliffs · very twisty', d2: 'Off the left edge is fatal',
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
@@ -248,7 +250,9 @@ const THEMES = [
   // cliffR: the fatal drop is on the RIGHT edge — and half the traffic comes at you
   { name: 'Bigger Sir', d1: 'Two-way on the cliffs', d2: 'The drop is on YOUR side now',
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 8,
+    // Tim's tune (June 12): ~half the previous total, cut asymmetrically — oncoming
+    // down 75% (oncFrac 0.25 of traf 4 ≈ 1) and same-direction down 25% (≈ 3).
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25,
     build: bsBuild, dec: bsDecR },
   // Inherited the old Apocalypse surface treatment (Tim's call): whole-road dirt,
   // pothole minefields, cows — scaled down to a tier-2 lap.
@@ -339,7 +343,7 @@ const THEMES = [
   { name: 'Wrong Way Express', d1: 'Half the traffic comes AT you', d2: 'Thread the gaps or part them',
     sky: '#BCD6E8', mtFar: '#9BA8B5', mtNear: '#7C8A99', ridge: '#79976C', gA: '#6E8F5A', gB: '#648251',
     dirt: 'rgba(120,100,70,0.7)', cliff: false, hA1: 520, hA2: 160, hF1: 6, hF2: 12, sunR: 32,
-    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 12,
+    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 12, oncFrac: 0.55,   // half comes AT you — that's the whole point of this track
     build: function () {
       // The gauntlet runs LONG now — sweepers and straights, traffic never stops coming
       addRoad(0, 220, 0, 0);
@@ -510,8 +514,11 @@ function buildCourse(c) {
 // --- Bike catalog. ts/ac/br/hd are multipliers; hz = hazard tolerance 0-1;
 // tough scales crash recovery time; armor = free crashes absorbed per race. ---
 const BIKES = [
-  { name: 'CB $450', kind: 'cafe', tier: 1, col: '#9AA7B0', col2: '#8B5A2B', snd: 'cafe', ts: 0.94, ac: 0.94, br: 1, hd: 1, hz: 0.5, tough: 0.5, armor: 0,
-    bars: [0.5, 0.5, 0.55, 0.5, 0.5, 0.55], fl: "It's cool because it's your first bike" },
+  // Progression rule (Tim, June 12): the starter bike can podium Upstate Run and
+  // NOTHING else — every later course should need a garage upgrade. Nerfed ts/ac
+  // accordingly; Upstate Run got its own lower rivalMul to stay winnable on it.
+  { name: 'CB $450', kind: 'cafe', tier: 1, col: '#9AA7B0', col2: '#8B5A2B', snd: 'cafe', ts: 0.87, ac: 0.87, br: 1, hd: 1, hz: 0.5, tough: 0.5, armor: 0,
+    bars: [0.42, 0.42, 0.55, 0.5, 0.5, 0.55], fl: "It's cool because it's your first bike" },
   { name: "Cousin Earle's Bike", kind: 'enduro', tier: 1, col: '#97C459', col2: '#F2F2F2', snd: 'enduro', ts: 0.88, ac: 1.05, br: 1.25, hd: 1.3, hz: 0.95, tough: 0.6, armor: 0,
     bars: [0.6, 0.42, 0.85, 0.55, 0.95, 0.85], fl: "He wouldn't mind" },
   { name: 'NipponButa', kind: 'hog', tier: 1, col: '#2C2C2A', col2: '#EF9F27', snd: 'hog', ts: 1.08, ac: 0.82, br: 0.9, hd: 0.85, hz: 0.75, tough: 0.9, armor: 1,

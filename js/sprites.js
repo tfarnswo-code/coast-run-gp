@@ -37,10 +37,8 @@ function headLights(x, y, w, ox, oy) {
 function drawMoto(bx, by, w, col, ln, brake, rot, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(bx, by + 2, w * 0.6, w * 0.11, 0, 0, 7); cx.fill();
   if (night && rot === undefined) {
-    // headlight pool on the road ahead + taillight glow — rivals read as bikes in
-    // the dark (skipped while they're spilled and lying flat)
-    cx.fillStyle = 'rgba(255,240,190,0.12)';
-    cx.beginPath(); cx.ellipse(bx, by - w * 1.75, w * 0.55, w * 0.18, 0, 0, 7); cx.fill();
+    // taillight glow only — rivals read as red dots in the dark. (A headlight pool
+    // was tried and read as a halo over their heads; Tim cut it. Skipped while spilled.)
     cx.fillStyle = 'rgba(255,59,48,0.5)';
     cx.beginPath(); cx.arc(bx, by - w * 0.5, w * 0.1, 0, 7); cx.fill();
   }

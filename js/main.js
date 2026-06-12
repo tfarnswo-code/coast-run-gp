@@ -89,6 +89,11 @@ function reset() {
     });
   }
   const nt = T.traf || 10;
+  // Oncoming share of two-way traffic: T.oncFrac (default 40%), taken from the
+  // NON-BUS vehicles only and spread evenly through the spawn order (rounded
+  // Bresenham, so small counts still land ~share·eligible). Bigger Sir runs 25%.
+  const oncShare = T.oncFrac === undefined ? 0.4 : T.oncFrac;
+  let oncN = 0;   // eligible (non-bus) vehicles seen so far
   const tt = ['car', 'car', 'truck', 'car', 'bus', 'car', 'truck', 'car', 'car', 'bus'];
   let tc = ['#5F5E5A', '#185FA5', '#9AB0BC', '#72243E', '#EF9F27', '#0F6E56', '#B4B2A9', '#444441', '#993C1D', '#EF9F27'];
   if (T.taxi) tc = ['#EFC727', '#EFC727', '#9AB0BC', '#EFC727', '#E24B4A', '#EFC727', '#B4B2A9', '#EFC727', '#185FA5', '#EFC727'];
@@ -98,10 +103,12 @@ function reset() {
     // is out, and every other bus is STOPPED on the right shoulder, lights flashing.
     const ty = (T.school && i % 3 === 0) || i === sbusAt ? 'sbus' : tt[i % 10];
     const stopped = T.school && ty === 'sbus' && i % 6 === 0;
-    // Two-way roads: ~40% face you (incl. some trucks); the rest are slower with-traffic
-    // you must overtake — which is what forces you left into the oncoming lane to pass.
-    // Buses (incl. Greisen) always run with the flow so their lettering reads right.
-    const onc = T.oncoming && ty !== 'sbus' && ty !== 'bus' && (i % 5 < 2);
+    // Two-way roads: oncShare of the non-bus traffic faces you (incl. some trucks);
+    // the rest are slower with-traffic you must overtake — which is what forces you
+    // left into the oncoming lane to pass. Buses (incl. Greisen) always run with
+    // the flow so their lettering reads right.
+    const elig = T.oncoming && ty !== 'sbus' && ty !== 'bus';
+    const onc = elig && Math.floor(++oncN * oncShare + 0.5) > Math.floor((oncN - 1) * oncShare + 0.5);
     // Realistic two-way road: you drive on the RIGHT, so with-traffic keeps the right
     // lanes (positive offset) and oncoming holds the LEFT lanes (negative). The two
     // streams never share a lane — nothing drives through anything — and an inner + outer

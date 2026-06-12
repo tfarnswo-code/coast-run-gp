@@ -109,6 +109,28 @@ in 1s. No console errors. Test-context localStorage wiped back to a fresh career
 - Old gotchas from 06-11 still apply (relZ wrap, lane lists hardcoded in
   reset()+rivalPlan(), race-card hit-test sync, half-grid mirroring).
 
+## ROUND 2 (same session): Tim's mid-play-test notes — ALL DONE, preview-verified
+
+1. **CB $450 nerfed for progression** (Tim could podium ALL tier-1 races on it):
+   ts/ac 0.94→**0.87**, bars to 0.42/0.42. **Upstate Run got `rivalMul: 0.96`**
+   (below the 1.04 tier-1 default) so the starter bike can still podium there —
+   and ONLY there. The margin vs the top rival on Upstate is now almost exactly
+   what it was pre-nerf (CB 10,440 vs cruise 9,193); on the other tier-1 courses
+   the gap collapsed (vs 9,959 at 1.04). The rule lives as a comment on the bike
+   catalog: starter bike beats course 1, everything else needs a garage upgrade.
+2. **`T.oncFrac` — per-theme oncoming share** (new knob in reset()): fraction of
+   the NON-BUS traffic that runs oncoming, default 0.4, spread evenly through the
+   spawn order with a ROUNDED Bresenham over the eligible count (buses no longer
+   silently eat the share — that was a bug in the first cut of this knob).
+   **Bigger Sir: traf 8→4, oncFrac 0.25 → 1 oncoming + 3 with-flow**, exactly
+   Tim's "75% off oncoming / 25% off same-direction, ~half the total."
+   **Wrong Way Express: oncFrac 0.55** to preserve its half-comes-at-you identity
+   (5 of 12, same as before). Other two-way tracks on the 0.4 default: Lodi 3/8,
+   Apocalypse 3/10, School Run 4/20 (unchanged from before).
+3. **Rival night halo removed**: the headlight pool ellipse in drawMoto read as a
+   halo floating over their heads. Cut entirely per Tim — rivals get NO headlight,
+   just the red taillight glow ("doesn't need to be super realistic").
+
 ## NOT yet done / next
 
 - Tim play-tests all of the above, especially: Apocalypse podium rate (rival dirt cap
