@@ -3,6 +3,7 @@
 let state = 'title', speed = 0, position = 0, playerN = 0;
 let paused = false;
 let raceT = 0, lapStartT = 0, curLap = 0, lapTimes = [], cd = 0, lastCd = 4, bgShift = 0, lean = 0, finalRank = 13, bounce = 0;
+let finalLapT = 0;   // 'FINAL LAP' banner timer (starts when lap 3 begins)
 let lives = 3, podiumCols = [], conf = [], bonusLife = false;
 let owned = [0], curBike = 0, selG = 0, pendingReward = false, rewardOpts = [], selR = 0, armorLeft = 0, staggerT = 0;
 let unlockedT = [0];   // only Upstate Run at first — podium each course to be offered the next
@@ -59,7 +60,7 @@ function loadCareer() {
 }
 
 function reset() {
-  speed = 0; position = 0; playerN = 0; raceT = 0; lapStartT = 0; curLap = 0; lapTimes = []; bgShift = 0; lastCd = 4;
+  speed = 0; position = 0; playerN = 0; raceT = 0; lapStartT = 0; curLap = 0; lapTimes = []; bgShift = 0; lastCd = 4; finalLapT = 0;
   crashing = false; crashTimer = 0; crashRot = 0; invulnT = 0; flashT = 0; bumpT = 0; lastBumpSeg = -1; fell = false; parts = []; conf = [];
   armorLeft = B().armor; staggerT = 0;
   airT = 0; airDur = 0; jumpCd = 0; prevGrade = 0; boostOn = false; boostM = 1; sirenOn = false; sirenM = 1; steamP = 0;
@@ -121,6 +122,21 @@ function reset() {
       speed: stopped ? 0 : maxSpeed * (onc ? 0.26 : 0.2 + (i % 4) * 0.045), type: ty,
       col: tc[i % 10], cw: ty === 'car' ? 0.26 : ty === 'truck' ? 0.27 : 0.33
     });
+  }
+  // Zone-confined oncoming (the Coast Run's desert leg): a separate pool of
+  // oncoming vehicles that lives inside T.oncZone = [f0, f1]. They recycle within
+  // the zone (see update()) so the gauntlet lasts the whole leg, and with-flow
+  // traffic merges right while it's in the zone.
+  if (T.oncZone) {
+    const z0 = trackLen * T.oncZone[0], z1 = trackLen * T.oncZone[1];
+    for (let i = 0; i < 6; i++) {
+      const ty = i % 3 === 2 ? 'truck' : 'car';
+      const off = -(0.25 + (i % 2) * 0.3);
+      traffic.push({
+        z: z0 + (z1 - z0) * (i + 0.5) / 6, off: off, base: off, dir: -1, stopped: false, zn: true,
+        speed: maxSpeed * 0.26, type: ty, col: tc[(i * 3 + 1) % 10], cw: ty === 'car' ? 0.26 : 0.27
+      });
+    }
   }
   if (T.oncoming) playerN = 0.4; // start in the right-hand lane
 }
@@ -306,6 +322,9 @@ function rivalBlocker(r, lane, look, wid) {
   let best = null, bd = look;
   for (const t of traffic) {
     const d = relZ(t.z - r.z);
+    // Oncoming traffic registers LATE (45% off the look-ahead) — closing speeds are
+    // brutal and the rivals shouldn't thread two-way traffic any better than Tim does.
+    if (t.dir === -1 && d >= look * 0.55) continue;
     if (d <= segLen * 0.2 || d >= bd) continue;
     const tsp = t.dir === -1 ? -t.speed : t.speed;
     if (r.speed - tsp < -200) continue;
@@ -343,7 +362,10 @@ function rivalPlan(r) {
   const look = segLen * (7 + r.skill * 9) * Math.max(0.55, r.speed / maxSpeed + 0.35);
   const cur = rivalBlocker(r, r.tgt, look, 0.05);
   if (!cur) { r.follow = null; return; }
-  const lanes = (T.oncoming ? [0.25, 0.55, -0.25] : [-0.45, 0, 0.45]).slice()
+  // Inside a zone-confined oncoming leg (Coast Run desert) rivals plan with the
+  // keep-right lane set, same as on full two-way tracks.
+  const zOn = T.oncZone && (() => { const f = (((r.z % trackLen) + trackLen) % trackLen) / trackLen; return f > T.oncZone[0] - 0.01 && f < T.oncZone[1]; })();
+  const lanes = (T.oncoming || zOn ? [0.25, 0.55, -0.25] : [-0.45, 0, 0.45]).slice()
     .sort((a, b) => Math.abs(a - r.tgt) - Math.abs(b - r.tgt));
   for (const ln of lanes) {
     if (Math.abs(ln - r.tgt) < 0.01) continue;
@@ -460,6 +482,7 @@ function update(dt) {
   const pos = position % trackLen;
   const pSeg = segs[Math.floor((pos + playerZ) / segLen) % N];
   if (flashT > 0) flashT -= dt;
+  if (finalLapT > 0) finalLapT -= dt;
   if (cheatT > 0) cheatT -= dt;
   if (newBikeT > 0) newBikeT -= dt;
   if (bumpT > 0) bumpT -= dt;
@@ -548,14 +571,15 @@ function update(dt) {
       const onGrass = Math.abs(playerN) > 1;
       const wetNow = rainAt(position);
       let topS = maxSpeed * bk.ts, acm = bk.ac;
-      // YIKES! mode: base stats are already Duke-level, and this DOUBLES the top
-      // speed. At ~2.5x maxSpeed the steering and curve-push both scale with speed,
-      // so reacting to the road in time stops being realistic — that's the point.
-      if (boostOn) { topS *= 2; acm *= 4; }
+      // YIKES! mode: base stats are already Duke-level, and this QUADRUPLES the top
+      // speed (~910 mph displayed) at x8 accel. At 5x maxSpeed the steering and
+      // curve-push both scale with speed, so reacting to the road in time stops
+      // being possible — per Tim: "It needs to be a bad idea."
+      if (boostOn) { topS *= 4; acm *= 8; }
       if (bk.sp === 'steam') { topS *= 1 + steamP * 0.07; acm *= 1 + Math.min(1, steamP * 0.05); }   // +7% top speed per pressure unit, unbounded
       const cap = onGrass ? grassMax * (0.7 + bk.hz * 0.9) : topS;
       if (keyU && speed < cap) speed += accel * acm * dt * Math.max(0.15, 1 - speed / cap);
-      // YIKES delivery is exponential, not gradual: ~90% of the gap to double-Duke
+      // YIKES delivery is exponential, not gradual: ~90% of the gap to quad-Duke
       // speed arrives within a second of pressing the button. An unusable amount
       // of speed, almost instantly — per Tim's spec.
       if (boostOn && speed < cap) speed += (cap - speed) * Math.min(1, dt * 2.2);
@@ -566,7 +590,10 @@ function update(dt) {
       if (keyB) { speed = Math.max(0, speed - brakeF * bk.br * (wetNow ? 0.5 : 1) * dt); boostOn = false; steamP = 0; }
       const sp = speed / maxSpeed;
       const steer = (keyR ? 1 : 0) - (keyL ? 1 : 0);
-      playerN += steer * dt * 2.2 * bk.hd * (wetNow ? 0.7 : 1) * Math.max(sp, 0.25) * (airT > 0 ? 0.25 : 1);
+      // low-speed steering floor 0.25 -> 0.45 (Tim: clawing back onto the road
+      // after running wide in a turn was nearly impossible — and bikes really do
+      // steer fine at walking pace)
+      playerN += steer * dt * 2.2 * bk.hd * (wetNow ? 0.7 : 1) * Math.max(sp, 0.45) * (airT > 0 ? 0.25 : 1);
       playerN -= dt * sp * pSeg.curve * 0.36;
       playerN = Math.max(-2.2, Math.min(2.2, playerN));
       lean += ((steer * Math.min(1, sp * 1.5)) - lean) * Math.min(1, dt * 8);
@@ -641,13 +668,35 @@ function update(dt) {
           t.base = t.stopped ? 0.62 : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
         }
       }
+      // Zone-confined oncoming pool (Coast Run desert leg): recycle within the zone
+      // so the gauntlet lasts the whole leg. Before the player arrives the cars
+      // loop top-to-bottom; once the player is inside they respawn just ahead;
+      // past the zone end they retire for good.
+      if (t.zn) {
+        const z0 = trackLen * T.oncZone[0], z1 = trackLen * T.oncZone[1];
+        if (t.z < z0 - segLen * 4 || t.z < position - segLen * 6) {
+          const tgt = position > z0 ? position + segLen * (45 + Math.floor(Math.random() * 70)) : z1 - Math.random() * (z1 - z0) * 0.5;
+          if (tgt < z1 - segLen * 2) {
+            t.z = tgt; t.base = -(0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
+          } else t.zn = false;   // player is past the leg — let this one drift away
+        }
+      }
+      // With-flow traffic merges right while inside the oncoming zone (the left
+      // side belongs to the oncoming stream there), easing back out afterwards.
+      let tb = t.base;
+      if (T.oncZone && t.dir === 1 && !t.stopped) {
+        const f = (((t.z % trackLen) + trackLen) % trackLen) / trackLen;
+        if (f > T.oncZone[0] - 0.015 && f < T.oncZone[1]) tb = t.base <= 0 ? 0.25 : 0.55;
+      }
       // Police siren: traffic pulls clear OFF the road, way down the line — by the
       // time you arrive at speed the lanes are empty. (Parked school buses stay put.)
       if (bk.sp === 'siren' && !t.stopped) {
         const dz = ((t.z - position) % trackLen + trackLen) % trackLen;
         const inRange = sirening && dz < segLen * 110;
-        const tgt = inRange ? (t.off >= playerN ? 1.38 : -1.38) : t.base;
+        const tgt = inRange ? (t.off >= playerN ? 1.38 : -1.38) : tb;
         t.off += (tgt - t.off) * Math.min(1, dt * 4);
+      } else if (tb !== t.base || (T.oncZone && t.dir === 1 && Math.abs(t.off - t.base) > 0.01)) {
+        t.off += (tb - t.off) * Math.min(1, dt * 1.4);
       }
     }
     if (!crashing && invulnT <= 0 && airT <= 0) {   // airborne (Dakar/crest) clears all vehicles
@@ -678,15 +727,18 @@ function update(dt) {
       if (!hit && !crashing) for (const t of traffic) {
         const onc = t.dir === -1;
         // Closing speed: oncoming adds, same-direction subtracts. Skip same-dir cars
-        // you're not gaining on; oncoming always closes, so widen the hit window by the
-        // closing distance this frame to stop fast traffic tunnelling through.
+        // you're not gaining on. Oncoming is FORGIVING now (Tim: close calls kept
+        // reading as crashes): the swept window covers only the actual crossing this
+        // frame plus half a car length, and the lateral hitbox runs at 78% width —
+        // a near-miss with overlapping paint is a near-miss, not a wreck.
         const closing = onc ? speed + t.speed : speed - t.speed;
         if (!onc && closing <= 250) continue;
         let dz = t.z - position;
         if (!T.p2p) dz = ((dz % trackLen) + trackLen) % trackLen;
-        const win = onc ? Math.min(segLen * 2.2, Math.max(segLen * 0.6, closing * dt * 1.2)) : segLen * 0.6;
-        const lo = onc ? -win * 0.4 : 0;
-        if (dz > lo && dz < win && Math.abs(playerN - t.off) < t.cw + wpad) {
+        const win = onc ? closing * dt + segLen * 0.45 : segLen * 0.6;
+        const lo = onc ? -segLen * 0.3 : 0;
+        const latW = (onc ? t.cw * 0.78 : t.cw) + wpad;
+        if (dz > lo && dz < win && Math.abs(playerN - t.off) < latW) {
           hitHard(playerN < t.off ? -1 : 1); break;
         }
       }
@@ -698,6 +750,10 @@ function update(dt) {
       if (lapNow > curLap) {
         lapTimes.push(raceT - lapStartT); lapStartT = raceT; curLap = lapNow;
         if (curLap >= 3) finishRace();
+        else if (curLap === 2) {   // last lap: big banner + a rising three-note call
+          finalLapT = 2.5;
+          note(523, 0, 0.12, 'square', 0.12); note(659, 0.13, 0.12, 'square', 0.12); note(880, 0.26, 0.3, 'square', 0.14);
+        }
         else { beep(660, 0.1); beep(990, 0.18); }
       }
     }
@@ -859,8 +915,11 @@ function render() {
   for (let n = drawN - 1; n >= 1; n--) {
     const d = sd[n]; if (!d) continue;
     const i = (base + n) % N, spr = segs[i].spr, ani = segs[i].animal;
-    if (spr || ani || buckets[n]) {
+    const gateHere = i === gateSeg || i === startGateSeg, signHere = signAt[i];
+    if (spr || ani || buckets[n] || gateHere || signHere) {
       cx.save(); cx.beginPath(); cx.rect(0, 0, W, d.clip); cx.clip();
+      if (gateHere) drawGate(d.p1.x, d.p1.y, d.p1.w);
+      if (signHere) drawRoadSign(d.p1.x, d.p1.y, d.p1.w, signHere);
       if (spr) drawScenery(spr, d.p1.x + spr.o * d.p1.w, d.p1.y, d.p1.w);
       if (ani && !ani.hit) {
         const ax = d.p1.x + ani.o * d.p1.w;
@@ -1015,6 +1074,15 @@ function drawHud() {
       const my2 = B().sp ? H - 104 : H - 74;
       cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, my2, 72, 26, 8); cx.fill();
       cx.fillStyle = '#fff'; cx.font = '11px monospace'; cx.fillText('muted', 24, my2 + 13);
+    }
+    if (finalLapT > 0 && !crashing) {
+      cx.textAlign = 'center';
+      cx.globalAlpha = Math.min(1, finalLapT * 1.5);
+      cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '700 40px monospace';
+      cx.fillText('FINAL LAP', W / 2, H * 0.24);
+      cx.fillStyle = '#FAC775'; cx.font = '700 39px monospace';
+      cx.fillText('FINAL LAP', W / 2, H * 0.24 - 2);
+      cx.globalAlpha = 1;
     }
     if (crashing) {
       cx.textAlign = 'center'; cx.fillStyle = 'rgba(20,24,32,0.85)'; cx.font = '500 34px monospace';

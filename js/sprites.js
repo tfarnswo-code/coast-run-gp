@@ -228,6 +228,45 @@ function drawScenery(sp, x, y, w) {
   }
 }
 
+// Start/finish arch spanning the road: white pillars + checkered banner. Render-only
+// (no collision) — x/y/w are the projected segment centre, half-width in px.
+function drawGate(x, y, w) {
+  if (w < 6) return;
+  const ex = w * 1.14, pw = Math.max(1.5, w * 0.045), ph = w * 0.5, bh = Math.max(2.5, w * 0.13);
+  cx.fillStyle = '#ECECE6';
+  cx.fillRect(x - ex - pw, y - ph, pw * 2, ph);
+  cx.fillRect(x + ex - pw, y - ph, pw * 2, ph);
+  cx.fillStyle = '#D2382E';   // red pillar caps
+  cx.fillRect(x - ex - pw, y - ph, pw * 2, bh * 0.35);
+  cx.fillRect(x + ex - pw, y - ph, pw * 2, bh * 0.35);
+  // checkered banner between the pillars
+  const by = y - ph, cell = Math.max(1.4, bh / 2);
+  cx.fillStyle = '#F4F4F0'; cx.fillRect(x - ex, by, ex * 2, bh);
+  cx.fillStyle = '#1c1c22';
+  for (let r = 0; r < 2; r++)
+    for (let cxp = x - ex + (r % 2) * cell; cxp < x + ex - 0.5; cxp += cell * 2)
+      cx.fillRect(cxp, by + r * cell, Math.min(cell, x + ex - cxp), Math.min(cell, bh - r * cell));
+}
+
+// Roadside board on the right shoulder — finish countdown ('1 MILE') or hazard
+// warning ('ONCOMING!'). Render-only, never collides.
+function drawRoadSign(x, y, w, label) {
+  if (w < 14) return;
+  const sx = x + w * 1.45, sw = Math.max(10, w * 0.34), sh = sw * 0.42, post = sh * 1.1;
+  const warn = label === 'ONCOMING!';
+  cx.fillStyle = '#8a8a84'; cx.fillRect(sx - sw * 0.04, y - post, sw * 0.08, post);
+  cx.fillStyle = warn ? '#E8B23A' : '#1D6E3E';
+  cx.fillRect(sx - sw / 2, y - post - sh, sw, sh);
+  cx.strokeStyle = '#F4F4F0'; cx.lineWidth = Math.max(1, sw * 0.03);
+  cx.strokeRect(sx - sw / 2, y - post - sh, sw, sh);
+  if (sw > 24) {
+    cx.fillStyle = warn ? '#1c1c22' : '#F4F4F0';
+    cx.font = '700 ' + Math.max(6, Math.floor(sh * 0.42)) + 'px monospace'; cx.textAlign = 'center';
+    cx.fillText(label, sx, y - post - sh * 0.45);
+    cx.textAlign = 'left';
+  }
+}
+
 const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); };
 
 // Jagged mountain silhouette (day courses)

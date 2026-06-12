@@ -155,7 +155,42 @@ player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After
   Upstate Run (`rivalMul: 0.96`, under the 1.04 tier-1 default) and nothing else —
   every later course requires a garage upgrade.
 - **YIKES delivery is exponential**: while boosting, `speed += (cap-speed)*min(1,dt*2.2)`
-  on top of normal accel — the doubled cap arrives in ~1s and doesn't need throttle held.
+  on top of normal accel — the cap arrives in ~1s and doesn't need throttle held.
+  Since June 12 PM the cap is ×4 top speed (~910 mph displayed) at ×8 accel — Tim's
+  spec: "It needs to be a bad idea."
+
+## Engine systems added June 12 2026 PM (durable)
+
+- **`T.oncZone: [f0, f1]` — zone-confined oncoming traffic** (the Coast Run's desert
+  leg). reset() spawns a 6-vehicle oncoming pool inside the zone (`t.zn = true`);
+  update() recycles them within the zone (ahead of the player once they're inside,
+  top-of-zone before that, retired past the end). With-flow traffic eases RIGHT
+  (0.25/0.55) while inside the zone and back to base after; rivals plan with the
+  keep-right lane set there too. buildCourse plants an 'ONCOMING!' warning board
+  ~100 segs before the zone. Independent of (and composable with) the whole-track
+  `T.oncoming` system.
+- **No animals where there's oncoming traffic (Tim's rule).** Deer/cows removed from
+  Lodi, Apocalypse, and the Coast Run desert zone; mysteryDec forces deer/cows off
+  when the oncoming roll hits. Squirrels (soft, never crash you) and crossing
+  guards (the School Run's identity) are exempt.
+- **Forgiving oncoming collisions.** Player-vs-oncoming uses a true crossing window
+  (`closing*dt + segLen*0.45`, lo `-segLen*0.3`) and a 78% lateral hitbox — paint-trade
+  near-misses miss. Same-direction traffic unchanged. Rivals also see oncoming LATE
+  (ignored beyond 55% of look-ahead in rivalBlocker) so they spill in two-way
+  traffic like humans do.
+- **Hill steepness is grade, not amplitude**: perceived hilliness ≈ `hA·π·hF/N`
+  units per segment. Big Sir ≈ 185 is the reference. Long courses need
+  proportionally higher hF (Lodi now 219 via hA 9500/4200, hF 16/80, climb 60000;
+  Apocalypse 201 via hA 7000/3400, hF 29/76). Check new courses against Big Sir
+  before trusting raw amplitude numbers.
+- **Start/finish furniture (render-only, never collides)**: `gateSeg` checkered arch
+  (loop start/finish line; p2p finish at N-160 plus a start arch at seg 6) and
+  `signAt = {seg: label}` roadside boards ('1 MILE'/'1/2 MILE' before p2p finishes,
+  'ONCOMING!' before oncZones). Set in buildCourse, drawn in the render sprite pass
+  via drawGate/drawRoadSign (sprites.js). 'FINAL LAP' banner + rising three-note
+  call when lap 3 of a loop begins (`finalLapT`).
+- **Low-speed steering floor is 0.45** (was 0.25) — Tim: getting back on the road
+  after running wide was nearly impossible, and bikes really do steer at walking pace.
 
 ## Backlog (discussed with Tim, in rough priority order)
 
