@@ -94,3 +94,29 @@ errors. Preview localStorage wiped back to a fresh career.
 - Old gotchas from 06-11/06-12 AM still apply (relZ wrap, lane lists in
   reset()+rivalPlan(), race-card hit-test sync, climb never on loops, squall window
   hard-coded in rainAt).
+
+## ROUND 4 (same day, later session): Bigger Sir tamed + oncoming variety — committed 358502a, NOT deployed
+
+Tim's verdict on round 3: overall podium rate high again (he's gotten better), but
+Bigger Sir was unfinishable without cheats (8th place, 4 lives lost by lap 2 even on
+Chippy/Ewan). Root cause: the recycle loop — its 1 oncoming car respawns 45–115 segs
+ahead forever, so cadence (not count) is the felt volume, roughly 2x what the config
+suggests (Tim's own estimate).
+
+- `T.oncGap` (new theme knob): multiplies the oncoming respawn gap. Bigger Sir = 2
+  (measured 92–218 segs). Wrong Way / School Run untouched (identity).
+- Rivals on all `T.oncoming` courses: rmul ×0.92 in reset(). Bigger Sir ALSO has
+  explicit rivalMul 1.0 → effective 0.92 (top rival cruise 0.734·maxSpeed, was 0.878).
+  Coast Run's oncZone leg deliberately exempt (Final Boss).
+- Rival wait-and-dart (Tim: they did his survival strategy "with such relative
+  ease"): darting into the oncoming lane now requires it clear at look×2.6 instead
+  of ×1.2 — they queue behind slowpokes like the player.
+- Oncoming variety, all two-way courses (Tim: "more variety, less volume"):
+  `rerollOncoming()` re-rolls type (60% car / 25% truck / 15% bus), colour, and
+  speed (0.20–0.34 maxSpeed) on every respawn, incl. the Coast Run zone pool.
+  New `PX_BUS_F` front-view coach in pixelart.js + drawBusFront in sprites.js;
+  render dispatch sends dir −1 buses to it. Traffic palettes hoisted to module
+  consts TRAF_COLS/TAXI_COLS in main.js.
+
+Preview-verified (port 4173): gaps/types/rivalMul via eval, bus sprite screenshot,
+5s full sim no console errors. Tim play-tests Bigger Sir, then deploy.
