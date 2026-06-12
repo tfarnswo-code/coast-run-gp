@@ -106,6 +106,26 @@ Course-select screen now has a pulsing "YOUR BIKE: <name> — press B to swap bi
   .claude/launch.json for verifying changes without disturbing Tim's play session
   on 4173 (separate browser context + separate localStorage).
 
+## TIM'S NOTES FOR NEXT SESSION (June 12 2026 — do these FIRST)
+
+1. **The Coast Run**: needs more difficulty, but NOT via heavy traffic — find other
+   kinds (hazards, terrain, weather, exposure…). Propose options to Tim first.
+2. **Baja swap/redesign**: the CURRENT Baja Apocalypse track design is what Tim wants
+   for **Baja Inferno** (tier 2). Then redesign **Apocalypse** as: ~50% dirt / 50%
+   asphalt, an oncoming lane with LIGHT traffic, very twisty AND very up-and-down
+   (as much as Big Sir). Cows/potholes similar to now. Goal: "a wild ride."
+3. **Escape from Lodi**: REMOVE the crest jumps entirely (they read as random — the
+   T.jumps flag + crest-launch code can stay in the engine, just unflag the track).
+   Its unique identity instead: a HUGE amount of elevation gain (a real mountain
+   climb) and the twistiest track in the game. "Escaping from Lodi County isn't easy."
+4. **Oncoming-traffic tracks in general**: too much traffic — the oncoming lane is
+   unusable for passing. Cut traffic counts on all two-way tracks (Bigger Sir, Lodi,
+   Wrong Way Express, Mystery oncoming rolls, new Apocalypse). ONLY The School Run
+   keeps heavy two-way traffic.
+5. **Electrode, take two**: base accel + top speed should ALREADY be maxed (Duke-
+   level), and the YIKES button roughly DOUBLES that — an unusable amount of speed
+   that arrives almost instantly. The current version under-delivers on both counts.
+
 ## Gotchas / loose ends
 
 - Tier-3 traf counts and rmul are first-guess values for the new lengths — tune with Tim.
