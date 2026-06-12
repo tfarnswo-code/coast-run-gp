@@ -127,6 +127,28 @@ speed > 250 units (vehicles), within ~0.5–0.6 segment lengths. Animals/scenery
 player's visual segment. Cliff death at playerN < -1.18 on `clf` segments. After any crash:
 2 s invulnerability with sprite flicker.
 
+## Engine systems added June 12 2026 (durable)
+
+- **Zone-local rain — `rainAt(z)` in main.js.** All rain physics and rendering route
+  through it (player + per-rival + overlay + sun). For `T.coastrun` it returns true on
+  f 0.28–0.52 (the cliffs squall); otherwise it reads `T.rain`, so theme-wide rain
+  courses are unaffected. The rival cruise wet penalty (×0.92) is applied dynamically
+  in rivalDrive, NOT baked into rmul at reset.
+- **`T.climb` theme field.** buildCourse adds `climb * (i/N)` to the height profile —
+  a net elevation gain (Escape from Lodi's mountain, 40000). p2p courses ONLY: on a
+  loop the wrap would be a cliff-sized seam.
+- **Rivals slow on FULL-WIDTH dirt** (`hz.w` set): speed capped at `2600 + 0.7*3400`
+  (×0.55 wet) in rivalDrive. Single-lane dirt still doesn't slow them. Required by the
+  50%-dirt Baja Apocalypse; also affects Baja Inferno's dirtRunsAll stretches.
+- **Night lighting.** Player beam originates at the FAIRING (`py-58`, narrow→wide
+  trapezoid + lamp halo), keyed on `nightNow` so the Coast Run finale city gets it.
+  Rivals: headlight pool ahead + lit taillight (drawMoto night param, skipped while
+  spilled). Traffic: `tailLights()`/`headLights()` helpers in sprites.js — rear views
+  get red pairs, oncoming front views get warm-white glows. All draw calls in the
+  vehicle bucket pass `nightNow`.
+- **YIKES delivery is exponential**: while boosting, `speed += (cap-speed)*min(1,dt*2.2)`
+  on top of normal accel — the doubled cap arrives in ~1s and doesn't need throttle held.
+
 ## Backlog (discussed with Tim, in rough priority order)
 
 1. Tier-3 "gimmick" vehicles — SPECS AGREED WITH TIM (June 10 2026), not yet built. Seven

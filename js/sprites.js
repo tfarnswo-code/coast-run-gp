@@ -17,10 +17,34 @@ function quad(x1, w1, y1, x2, w2, y2, col) {
   cx.moveTo(x1 - w1, y1 + 1); cx.lineTo(x1 + w1, y1 + 1); cx.lineTo(x2 + w2, y2); cx.lineTo(x2 - w2, y2); cx.fill();
 }
 
+// Night dressing for traffic, sized off the sprite width. Rear views get a
+// taillight pair; oncoming front views get glowing headlights.
+function tailLights(x, y, w, ox, oy) {
+  cx.globalAlpha = 0.25; cx.fillStyle = '#FF3B30';
+  cx.beginPath(); cx.arc(x - w * ox, y - w * oy, w * 0.14, 0, 7); cx.arc(x + w * ox, y - w * oy, w * 0.14, 0, 7); cx.fill();
+  cx.globalAlpha = 1; cx.fillStyle = 'rgba(255,59,48,0.9)';
+  cx.fillRect(x - w * (ox + 0.05), y - w * oy - w * 0.035, w * 0.1, w * 0.07);
+  cx.fillRect(x + w * (ox - 0.05), y - w * oy - w * 0.035, w * 0.1, w * 0.07);
+}
+function headLights(x, y, w, ox, oy) {
+  cx.globalAlpha = 0.3; cx.fillStyle = '#fff2c0';
+  cx.beginPath(); cx.arc(x - w * ox, y - w * oy, w * 0.22, 0, 7); cx.arc(x + w * ox, y - w * oy, w * 0.22, 0, 7); cx.fill();
+  cx.globalAlpha = 1; cx.fillStyle = '#fff2c0';
+  cx.beginPath(); cx.arc(x - w * ox, y - w * oy, w * 0.09, 0, 7); cx.arc(x + w * ox, y - w * oy, w * 0.09, 0, 7); cx.fill();
+}
+
 // Generic sportbike used for all 12 rivals — pixel sprite, palette-swapped per rival
-function drawMoto(bx, by, w, col, ln, brake, rot) {
+function drawMoto(bx, by, w, col, ln, brake, rot, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(bx, by + 2, w * 0.6, w * 0.11, 0, 0, 7); cx.fill();
-  const img = pxSprite('rival', PX_RIVAL, { 1: col, 2: hexMix(col, 0.55), r: brake ? '#FF3B30' : '#8a3434' }, true);
+  if (night && rot === undefined) {
+    // headlight pool on the road ahead + taillight glow — rivals read as bikes in
+    // the dark (skipped while they're spilled and lying flat)
+    cx.fillStyle = 'rgba(255,240,190,0.12)';
+    cx.beginPath(); cx.ellipse(bx, by - w * 1.75, w * 0.55, w * 0.18, 0, 0, 7); cx.fill();
+    cx.fillStyle = 'rgba(255,59,48,0.5)';
+    cx.beginPath(); cx.arc(bx, by - w * 0.5, w * 0.1, 0, 7); cx.fill();
+  }
+  const img = pxSprite('rival', PX_RIVAL, { 1: col, 2: hexMix(col, 0.55), r: brake || night ? '#FF3B30' : '#8a3434' }, true);
   pxBlit(img, bx, by, w / 17.8, rot !== undefined ? rot : ln * 0.4);   // rot = spilled rival lying down
 }
 
@@ -114,37 +138,44 @@ function drawSkyDecor(t, night) {
   }
 }
 
-function drawCar(x, y, w, col) {
+function drawCar(x, y, w, col, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('car', PX_CAR, { 1: col, 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+  if (night) tailLights(x, y, w, 0.42, 0.32);
 }
 
-function drawTruck(x, y, w, col) {
+function drawTruck(x, y, w, col, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('truck', PX_TRUCK, { 1: col, 2: hexMix(col, 0.6), 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+  if (night) tailLights(x, y, w, 0.42, 0.25);
 }
 
-// Front views for oncoming traffic (headlights glow via the static 'f' palette colour).
-function drawCarFront(x, y, w, col) {
+// Front views for oncoming traffic (headlights glow via the static 'f' palette colour;
+// at night they get a real glow halo on top).
+function drawCarFront(x, y, w, col, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('carF', PX_CAR_F, { 1: col, 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+  if (night) headLights(x, y, w, 0.42, 0.33);
 }
 
-function drawTruckFront(x, y, w, col) {
+function drawTruckFront(x, y, w, col, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('truckF', PX_TRUCK_F, { 1: col, 2: hexMix(col, 0.6), 5: hexMix(col, 1.35) }, true), x, y, w / 20, 0);
+  if (night) headLights(x, y, w, 0.42, 0.3);
 }
 
-function drawBus(x, y, w, col) {
+function drawBus(x, y, w, col, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('bus', PX_BUS, { 1: col, 2: hexMix(col, 0.6) }, true), x, y, w / 20, 0);
+  if (night) tailLights(x, y, w, 0.42, 0.25);
 }
 
 // The Greisen school bus — full-grid sprite so the name reads. On The School Run the
 // whole fleet is out; stopped buses get alternating red wig-wag lights up top.
-function drawSchoolBus(x, y, w, stopped) {
+function drawSchoolBus(x, y, w, stopped, night) {
   cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.6, w * 0.1, 0, 0, 7); cx.fill();
   pxBlit(pxSprite('sbus', PX_SBUS, null, false), x, y, w / 24, 0);
+  if (night) tailLights(x, y, w, 0.45, 0.22);
   if (stopped) {
     const ph = Math.floor(performance.now() / 350) % 2;
     const ly = y - w * 0.92, r = Math.max(1.5, w * 0.05);

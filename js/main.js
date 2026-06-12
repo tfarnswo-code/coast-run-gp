@@ -21,6 +21,15 @@ const UPM = 248308;                                       // road units per disp
 
 function B() { return BIKES[curBike]; }
 
+// Rain can be theme-wide (Mystery rolls) or zone-local: The Coast Run's squall
+// soaks the cliffs leg only (f 0.28-0.52). Ask per track position, so each rival
+// gets wet where THEY are, not where the player is.
+function rainAt(z) {
+  if (!T) return false;
+  if (T.coastrun) { const f = (((z % trackLen) + trackLen) % trackLen) / trackLen; return f > 0.28 && f < 0.52; }
+  return !!T.rain;
+}
+
 // --- Career persistence (localStorage, per browser/device) ---
 const SAVE_KEY = 'coastrun-career';
 function saveCareer() {
@@ -59,9 +68,9 @@ function reset() {
   // Difficulty by track tier: tier-1 start tracks (0-3) baseline, tier-2 reward tracks
   // (4-7) a bit quicker, tier-3 Epic Runs (8+) much quicker so you need a fast bike.
   // A theme may override with its own rivalMul (Salt Flats sets the bar highest).
-  // Rain slows the rivals too (cruise, braking, spill odds) — without this the
-  // player penalties would make wet races unwinnable.
-  const rmul = (T.rivalMul || (sel >= 8 ? 1.22 : sel >= 4 ? 1.1 : 1.04)) * (T.rain ? 0.92 : 1);
+  // Rain slows the rivals too (cruise via rivalDrive, braking, spill odds) — without
+  // this the player penalties would make wet races unwinnable.
+  const rmul = T.rivalMul || (sel >= 8 ? 1.22 : sel >= 4 ? 1.1 : 1.04);
   // Each rival is a driver, not a metronome: cruise = personality top speed (higher than
   // the old constant since avoidance now costs them time), skill = reaction quality
   // (backmarkers are clumsy and crash; front-runners rarely blow it).
@@ -349,13 +358,15 @@ function rivalDrive(r, dt) {
   if (r.stumbleT > 0) r.stumbleT -= dt;
   r.decT -= dt;
   if (r.decT <= 0) { r.decT = 0.12 + (1 - r.skill) * 0.33; rivalPlan(r); }
+  const wet = rainAt(r.z);
   if (r.follow) {
     r.braking = true;
     const tgtSp = Math.max(0, r.follow.sp * 0.92);
-    if (r.speed > tgtSp) r.speed = Math.max(tgtSp, r.speed - brakeF * (T.rain ? 0.5 : 0.7) * dt);
+    if (r.speed > tgtSp) r.speed = Math.max(tgtSp, r.speed - brakeF * (wet ? 0.5 : 0.7) * dt);
   } else {
     r.braking = false;
-    if (r.stumbleT <= 0 && r.speed < r.cruise) r.speed = Math.min(r.cruise, r.speed + r.acc * dt * Math.max(0.25, 1 - r.speed / r.cruise + 0.2));
+    const crz = r.cruise * (wet ? 0.92 : 1);   // rain slows their pace too
+    if (r.stumbleT <= 0 && r.speed < crz) r.speed = Math.min(crz, r.speed + r.acc * dt * Math.max(0.25, 1 - r.speed / crz + 0.2));
   }
   r.off += (r.tgt - r.off) * Math.min(1, dt * (1.7 + r.skill * 1.5));
   r.z += r.speed * dt;
@@ -366,7 +377,7 @@ function rivalDrive(r, dt) {
     const tsp = t.dir === -1 ? -t.speed : t.speed;
     const closing = r.speed - tsp;
     if (Math.abs(d) < segLen * 0.5 && Math.abs(r.off - t.off) < t.cw && closing > 300) {
-      if (t.dir === -1 || closing > 2400 || Math.random() > r.skill + (T.rain ? 0.18 : 0.32)) { r.spillDur = 1.5 + Math.random() * 0.9; r.spillT = r.spillDur; }
+      if (t.dir === -1 || closing > 2400 || Math.random() > r.skill + (wet ? 0.18 : 0.32)) { r.spillDur = 1.5 + Math.random() * 0.9; r.spillT = r.spillDur; }
       else { r.stumbleT = 1; r.speed = Math.max(0, tsp * 0.8); }
       r.hitCd = 1; r.follow = null; r.decT = 0;
       return;
@@ -391,8 +402,12 @@ function rivalDrive(r, dt) {
   }
   const hz = segs[si % N].hz;
   if (r.hitCd <= 0 && hz && hz.t === 'pot' && si !== r.lastPotSeg && Math.abs(r.off - hz.o) < 0.15) {
-    r.lastPotSeg = si; r.speed *= T.rain ? 0.72 : 0.84; r.stumbleT = Math.max(r.stumbleT, T.rain ? 0.7 : 0.45);
+    r.lastPotSeg = si; r.speed *= wet ? 0.72 : 0.84; r.stumbleT = Math.max(r.stumbleT, wet ? 0.7 : 0.45);
   }
+  // Full-width dirt slows the rivals too (they have no clean line either) — without
+  // this they'd sail over the 50%-dirt Apocalypse untouched. Generic mid-pack dirt
+  // tolerance ~0.7; single-lane dirt is left alone (they "know the line").
+  if (hz && hz.t === 'dirt' && hz.w) r.speed = Math.min(r.speed, (2600 + 0.7 * 3400) * (wet ? 0.55 : 1));
 }
 
 function doCrash(side) {
@@ -524,22 +539,27 @@ function update(dt) {
       }
       prevGrade = grd;
       const onGrass = Math.abs(playerN) > 1;
+      const wetNow = rainAt(position);
       let topS = maxSpeed * bk.ts, acm = bk.ac;
-      // YIKES! mode: insane acceleration to insane speed. At ~2x maxSpeed the steering
-      // and curve-push both scale with speed, so reacting to the road in time stops
-      // being realistic — that's the point. Hence the name.
-      if (boostOn) { topS *= 1.8; acm *= 4; }
+      // YIKES! mode: base stats are already Duke-level, and this DOUBLES the top
+      // speed. At ~2.5x maxSpeed the steering and curve-push both scale with speed,
+      // so reacting to the road in time stops being realistic — that's the point.
+      if (boostOn) { topS *= 2; acm *= 4; }
       if (bk.sp === 'steam') { topS *= 1 + steamP * 0.07; acm *= 1 + Math.min(1, steamP * 0.05); }   // +7% top speed per pressure unit, unbounded
       const cap = onGrass ? grassMax * (0.7 + bk.hz * 0.9) : topS;
       if (keyU && speed < cap) speed += accel * acm * dt * Math.max(0.15, 1 - speed / cap);
-      else if (!keyU) speed = Math.max(0, speed - (1500 + speed * 0.15) * dt);
+      // YIKES delivery is exponential, not gradual: ~90% of the gap to double-Duke
+      // speed arrives within a second of pressing the button. An unusable amount
+      // of speed, almost instantly — per Tim's spec.
+      if (boostOn && speed < cap) speed += (cap - speed) * Math.min(1, dt * 2.2);
+      else if (!keyU && !boostOn) speed = Math.max(0, speed - (1500 + speed * 0.15) * dt);
       if (speed > cap) speed = Math.max(cap, speed - 9000 * dt);
       // Rain is a real event now: brakes at half strength, steering 30% duller —
-      // and the same misery hits the rivals (see reset/rivalDrive), so it's fair.
-      if (keyB) { speed = Math.max(0, speed - brakeF * bk.br * (T.rain ? 0.5 : 1) * dt); boostOn = false; steamP = 0; }
+      // and the same misery hits the rivals (see rivalDrive), so it's fair.
+      if (keyB) { speed = Math.max(0, speed - brakeF * bk.br * (wetNow ? 0.5 : 1) * dt); boostOn = false; steamP = 0; }
       const sp = speed / maxSpeed;
       const steer = (keyR ? 1 : 0) - (keyL ? 1 : 0);
-      playerN += steer * dt * 2.2 * bk.hd * (T.rain ? 0.7 : 1) * Math.max(sp, 0.25) * (airT > 0 ? 0.25 : 1);
+      playerN += steer * dt * 2.2 * bk.hd * (wetNow ? 0.7 : 1) * Math.max(sp, 0.25) * (airT > 0 ? 0.25 : 1);
       playerN -= dt * sp * pSeg.curve * 0.36;
       playerN = Math.max(-2.2, Math.min(2.2, playerN));
       lean += ((steer * Math.min(1, sp * 1.5)) - lean) * Math.min(1, dt * 8);
@@ -555,19 +575,19 @@ function update(dt) {
           if (hseg.hz.t === 'pot' && !bk.noPot && Math.abs(playerN - hseg.hz.o) < 0.16) {
             if (pi !== lastBumpSeg) {
               // wet potholes wrench the bars much harder — the front wheel skips
-              const wet = T.rain ? 1.7 : 1;
-              lastBumpSeg = pi; speed *= 0.55 + bk.hz * 0.3; bumpT = 0.7 * (1.2 - bk.hz) * (T.rain ? 1.3 : 1); thud();
+              const wet = wetNow ? 1.7 : 1;
+              lastBumpSeg = pi; speed *= 0.55 + bk.hz * 0.3; bumpT = 0.7 * (1.2 - bk.hz) * (wetNow ? 1.3 : 1); thud();
               const kd = Math.random() < 0.5 ? -1 : 1;
               playerN += kd * (0.28 + Math.random() * 0.22) * (1.15 - bk.hz) * wet;
               lean += kd * 0.9 * (1.15 - bk.hz) * wet;
             }
           } else if (hseg.hz.t === 'dirt' && Math.abs(playerN - hseg.hz.o) < (hseg.hz.w || 0.42)) {
             // rain turns dirt to mud: far lower speed cap, much heavier drag
-            const mudCap = (2600 + bk.hz * 3400) * (T.rain ? 0.55 : 1);
-            speed = Math.max(Math.min(speed, mudCap), speed - 5200 * (1.1 - bk.hz) * (T.rain ? 1.6 : 1) * dt);
+            const mudCap = (2600 + bk.hz * 3400) * (wetNow ? 0.55 : 1);
+            speed = Math.max(Math.min(speed, mudCap), speed - 5200 * (1.1 - bk.hz) * (wetNow ? 1.6 : 1) * dt);
             bumpT = Math.max(bumpT, 0.2 * (1.2 - bk.hz));
             playerN += (Math.random() - 0.5) * 0.022 * (1.2 - bk.hz);
-            if (Math.random() < 0.35) spawnParts(1, T.rain ? '#5d4630' : '#8a6a44', 130, 70);
+            if (Math.random() < 0.35) spawnParts(1, wetNow ? '#5d4630' : '#8a6a44', 130, 70);
           }
         }
         if (invulnT <= 0 && speed > 1200 && airT <= 0) {
@@ -688,7 +708,8 @@ function hexLerp(a, b, t) {
   return 'rgb(' + r + ',' + g + ',' + bl + ')';
 }
 function coastSky(f) {
-  const stops = [[0, '#8FD0E8'], [0.3, '#9AD1EC'], [0.56, '#F2CFA0'], [0.8, '#1B2233'], [1.01, '#1B2233']];
+  // storm grays bracket the cliffs leg (the squall zone, see rainAt)
+  const stops = [[0, '#8FD0E8'], [0.26, '#9AD1EC'], [0.31, '#5E6B78'], [0.49, '#66737F'], [0.56, '#F2CFA0'], [0.8, '#1B2233'], [1.01, '#1B2233']];
   for (let k = 0; k < stops.length - 1; k++) {
     if (f <= stops[k + 1][0]) {
       const t = Math.max(0, Math.min(1, (f - stops[k][0]) / (stops[k + 1][0] - stops[k][0])));
@@ -723,7 +744,8 @@ function render() {
     drawSkyline(H * 0.5, 80, T.mtFar, bgShift * 0.2, 56);
     drawSkyline(H * 0.52, 46, T.mtNear, bgShift * 0.45, 42);
   } else {
-    cx.fillStyle = '#FFF3C4'; cx.beginPath(); cx.arc(W * 0.78, 58, T.sunR, 0, 7); cx.fill();
+    // no sun in a squall (the Coast Run's storm leg) — matches the Mystery rain rule
+    if (!rainAt(position)) { cx.fillStyle = '#FFF3C4'; cx.beginPath(); cx.arc(W * 0.78, 58, T.sunR, 0, 7); cx.fill(); }
     drawSkyDecor(raceT, false);
     drawRange(H * 0.5, 95, T.mtFar, bgShift * 0.2, 110);
     drawRange(H * 0.53, 55, T.mtNear, bgShift * 0.45, 70);
@@ -852,22 +874,29 @@ function render() {
               let ln = Math.sin(raceT + rv.ph) * 0.2;
               if (rv.stumbleT > 0) ln = Math.sin(raceT * 24 + rv.ph) * 0.6;   // big wobble
               const rot = rv.spillT > 0 ? (rv.ph % 2 < 1 ? -1 : 1) * 1.5 * Math.min(1, (rv.spillDur - rv.spillT) * 3.5) : undefined;
-              drawMoto(sx, sy, sw, rv.col, ln, rv.braking && rv.spillT <= 0, rot);
+              drawMoto(sx, sy, sw, rv.col, ln, rv.braking && rv.spillT <= 0, rot, nightNow);
             }
           }
-          else if (v.kind === 'car') { const sw = w0 * 0.3; if (sw > 2) (v.o.dir === -1 ? drawCarFront : drawCar)(sx, sy, sw, v.o.col); }
-          else if (v.kind === 'truck') { const sw = w0 * 0.34; if (sw > 2) (v.o.dir === -1 ? drawTruckFront : drawTruck)(sx, sy, sw, v.o.col); }
-          else if (v.kind === 'sbus') { const sw = w0 * 0.34; if (sw > 2) drawSchoolBus(sx, sy, sw, v.o.stopped); }
-          else { const sw = w0 * 0.34; if (sw > 2) drawBus(sx, sy, sw, v.o.col); }
+          else if (v.kind === 'car') { const sw = w0 * 0.3; if (sw > 2) (v.o.dir === -1 ? drawCarFront : drawCar)(sx, sy, sw, v.o.col, nightNow); }
+          else if (v.kind === 'truck') { const sw = w0 * 0.34; if (sw > 2) (v.o.dir === -1 ? drawTruckFront : drawTruck)(sx, sy, sw, v.o.col, nightNow); }
+          else if (v.kind === 'sbus') { const sw = w0 * 0.34; if (sw > 2) drawSchoolBus(sx, sy, sw, v.o.stopped, nightNow); }
+          else { const sw = w0 * 0.34; if (sw > 2) drawBus(sx, sy, sw, v.o.col, nightNow); }
         }
       }
       cx.restore();
     }
   }
   const px = W / 2 + lean * 10, py = H - 24 + Math.sin(bounce) * Math.min(2, speed / 4000) + (bumpT > 0 ? Math.sin(bounce * 4) * 7 * bumpT : 0);
-  if (T.night && (state === 'race' || state === 'count')) {
-    cx.fillStyle = 'rgba(255,240,190,0.08)';
-    cx.beginPath(); cx.moveTo(px - 26, H - 30); cx.lineTo(px - 95, H * 0.55); cx.lineTo(px + 95, H * 0.55); cx.lineTo(px + 26, H - 30); cx.fill();
+  // Headlight beam leaves the FAIRING, not the base of the bike (Tim's note) —
+  // narrow at the lamp, opening out onto the road ahead. nightNow (not T.night)
+  // so the Coast Run finale's city zone gets it too. No beam while wrecking.
+  if (nightNow && (state === 'race' || state === 'count') && !crashing) {
+    const ox = px + lean * 4, oy = py - 58;
+    cx.fillStyle = 'rgba(255,240,190,0.09)';
+    cx.beginPath(); cx.moveTo(ox - 9, oy); cx.lineTo(px - 95, H * 0.55); cx.lineTo(px + 95, H * 0.55); cx.lineTo(ox + 9, oy); cx.fill();
+    // halo peeking around the bike body at lamp height
+    cx.fillStyle = 'rgba(255,242,192,0.30)';
+    cx.beginPath(); cx.ellipse(ox, oy, 26, 6, 0, 0, 7); cx.fill();
   }
   const flicker = invulnT > 0 && Math.floor(invulnT * 12) % 2 === 0;
   if (crashing && fell) {
@@ -899,7 +928,7 @@ function render() {
     cx.fillStyle = p.col; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 7); cx.fill();
   }
   cx.globalAlpha = 1;
-  if (T.rain) {
+  if (rainAt(position)) {
     // diagonal rain streaks, drifting with time (raceT freezes them on pause)
     cx.strokeStyle = 'rgba(205,220,235,0.4)'; cx.lineWidth = 1.5; cx.beginPath();
     for (let k = 0; k < 64; k++) {

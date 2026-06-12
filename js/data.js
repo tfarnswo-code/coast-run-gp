@@ -104,7 +104,8 @@ function mysteryDec(th, night) {
   th.rA = city ? '#4a4d54' : null; th.rB = city ? '#45484e' : null; th.lane = city ? '#d8c84a' : null;
   th.sunR = night ? 22 : (th.rain ? 0 : 28);   // rainy days lose the sun; the moon stays out
   if (th.rain && !night) th.sky = '#5E6B78';
-  if (th.oncoming) th.traf = (th.traf || 10) + 6;
+  // two-way rolls run LIGHT (Tim: heavy traffic makes the oncoming lane unusable for passing)
+  if (th.oncoming) th.traf = Math.min(th.traf || 10, 9);
   const potMod = city ? 29 : [41, 67, 89][Math.floor(r() * 3)];
   th.mysteryBiome = ['forest', 'desert', 'scrub', 'city'][gi] + '/' + prim + (intr ? '+' + intr : '')
     + (cL && cR ? '/razorback' : cL ? '/cliffL' : cR ? '/cliffR' : '')
@@ -247,12 +248,29 @@ const THEMES = [
   // cliffR: the fatal drop is on the RIGHT edge — and half the traffic comes at you
   { name: 'Bigger Sir', d1: 'Two-way on the cliffs', d2: 'The drop is on YOUR side now',
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 14,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 8,
     build: bsBuild, dec: bsDecR },
-  { name: 'Baja Inferno', d1: 'The desert fights back', d2: 'Potholes and dirt everywhere',
+  // Inherited the old Apocalypse surface treatment (Tim's call): whole-road dirt,
+  // pothole minefields, cows — scaled down to a tier-2 lap.
+  { name: 'Baja Inferno', d1: 'The road has given up', d2: 'Both lanes dirt · minefields',
     sky: '#EFC9A0', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
     dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 700, hF1: 6, hF2: 16, sunR: 36, lock: true,
-    build: bjBuild, dec: function () { bjDec(17, 173, 14, 80); } },
+    build: bjBuild, dec: function () {
+      for (let i = 0; i < N; i++) {
+        const s = segs[i];
+        if (i % 9 === 4) s.spr = { t: desertCactus(i), o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
+        else if (i % 13 === 6) s.spr = { t: 'rock', o: (i % 2 ? -1 : 1) * (1.6 + (i * 5 % 6) / 5) };
+        else if (i % 7 === 1) s.spr = { t: 'shrub', o: (i % 2 ? 1 : -1) * (2.0 + (i * 3 % 6) / 4) };
+        if (i % 173 === 57 && Math.abs(s.curve) < 4) s.animal = { t: 'cow', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
+      }
+      for (let i = 0; i < N; i++) {
+        const s = segs[i];
+        if ((i + 320) % 601 < 12 && Math.abs(s.curve) < 5 && !s.hz && !s.animal) s.hz = { t: 'pot', o: ((i * 7) % 3 - 1) * 0.5 };
+        else if (Math.abs(s.curve) < 5 && i % 47 === 9 && !s.hz) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
+      }
+      dirtRunsAll(3, 24, 50);
+      dirtRuns(5, 26, 55);
+    } },
   { name: 'Mystery Run', d1: 'Different every time', d2: 'Read the road · choose wisely',
     sky: '#7EC4E8', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: null, gA: '#6AAE4E', gB: '#5F9F45',
     dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2500, hA2: 800, hF1: 8, hF2: 18, sunR: 28, lock: true, mystery: true,
@@ -291,17 +309,19 @@ const THEMES = [
         if (Math.abs(s.curve) < 5 && i % 223 === 60) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
       }
     } },
-  // Extreme hills + extreme twist + oncoming traffic. Crests still launch you (jumps).
-  { name: 'Escape from Lodi', d1: 'Hairpins, big hills, oncoming', d2: 'Stuck in Lodi? Not today',
+  // A real mountain climb: `climb` adds a steady net elevation gain on top of the
+  // rollers, and the hairpins are the tightest in the game. Crest jumps removed
+  // (they read as random — the T.jumps flag + launch code stay in the engine).
+  { name: 'Escape from Lodi', d1: 'The mountain climb', d2: 'Twistiest road in the game',
     sky: '#8FD0E8', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: '#7FAE82', gA: '#7CB85A', gB: '#70AC50',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 6800, hA2: 3400, hF1: 12, hF2: 40, sunR: 28,
-    lock: true, epic: true, p2p: true, jumps: true, oncoming: 0.5, traf: 16,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 6800, hA2: 3400, hF1: 12, hF2: 40, sunR: 28, climb: 40000,
+    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 8,
     build: function () {
-      // Relentless alternating hairpins with the odd breather straight
+      // Relentless alternating hairpins, sharper than anything else, fewer breathers
       addRoad(0, 120, 0, 0);
       for (let k = 0; k < 52; k++) {
-        addRoad(25, 50 + (k * 13 % 40), 25, (k % 2 ? -1 : 1) * (4.5 + (k * 7 % 5)));
-        if (k % 3 === 2) addRoad(0, 40 + (k * 11 % 50), 0, 0);
+        addRoad(25, 50 + (k * 13 % 40), 25, (k % 2 ? -1 : 1) * (5 + (k * 7 % 6)));
+        if (k % 4 === 3) addRoad(0, 40 + (k * 11 % 50), 0, 0);
       }
       addRoad(0, 100, 0, 0);
     },
@@ -319,7 +339,7 @@ const THEMES = [
   { name: 'Wrong Way Express', d1: 'Half the traffic comes AT you', d2: 'Thread the gaps or part them',
     sky: '#BCD6E8', mtFar: '#9BA8B5', mtNear: '#7C8A99', ridge: '#79976C', gA: '#6E8F5A', gB: '#648251',
     dirt: 'rgba(120,100,70,0.7)', cliff: false, hA1: 520, hA2: 160, hF1: 6, hF2: 12, sunR: 32,
-    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 22,
+    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 12,
     build: function () {
       // The gauntlet runs LONG now — sweepers and straights, traffic never stops coming
       addRoad(0, 220, 0, 0);
@@ -337,20 +357,22 @@ const THEMES = [
         if (Math.abs(s.curve) < 5 && i % 211 === 70) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
       }
     } },
-  // Replaced Storm Run (the `rain` theme flag + rain rendering/physics stay in the
-  // engine — Tim wants rain back on a different course later).
-  { name: 'Baja Apocalypse', d1: 'The road has given up', d2: 'Both lanes dirt · minefields',
+  // Redesigned to Tim's spec (June 12): ~50% dirt / 50% asphalt in long alternating
+  // stretches (dirt runs straight through the twists — that's the wild ride),
+  // Big-Sir-grade twist AND hills, an oncoming lane with LIGHT traffic, cows and
+  // pothole minefields like before. The old all-dirt design moved to Baja Inferno.
+  { name: 'Baja Apocalypse', d1: 'Half dirt · all chaos', d2: 'Twisty, hilly, a wild ride',
     sky: '#E8B98A', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
-    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 800, hF1: 8, hF2: 18, sunR: 38,
-    lock: true, epic: true, p2p: true, traf: 26,
+    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 4800, hA2: 1400, hF1: 29, hF2: 64, sunR: 38,
+    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 10,
     build: function () {
-      // Long fast desert haul — what's left of the road, anyway
-      addRoad(0, 200, 0, 0);
-      for (let k = 0; k < 18; k++) {
-        addRoad(45, 110 + (k * 29 % 80), 45, (k % 2 ? -1 : 1) * (2.5 + (k * 5 % 3)));
-        addRoad(0, 200 + (k * 47 % 180), 0, 0);
+      // Big-Sir twist on what's left of the desert road
+      addRoad(0, 140, 0, 0);
+      for (let k = 0; k < 38; k++) {
+        addRoad(30, 70 + (k * 19 % 50), 30, (k % 2 ? -1 : 1) * (4 + (k * 7 % 5) * 0.6));
+        if (k % 3 === 2) addRoad(0, 60 + (k * 23 % 60), 0, 0);
       }
-      addRoad(0, 160, 0, 0);
+      addRoad(0, 120, 0, 0);
     },
     dec: function () {
       for (let i = 0; i < N; i++) {
@@ -359,16 +381,20 @@ const THEMES = [
         else if (i % 13 === 6) s.spr = { t: 'rock', o: (i % 2 ? -1 : 1) * (1.6 + (i * 5 % 6) / 5) };
         else if (i % 7 === 1) s.spr = { t: 'shrub', o: (i % 2 ? 1 : -1) * (2.0 + (i * 3 % 6) / 4) };
         if (i % 191 === 60 && Math.abs(s.curve) < 4) s.animal = { t: 'cow', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
+        // ~50/50 surface: two overlapping sine waves give organic dirt/asphalt blocks
+        // (~100-400 segs each) that never settle into a rhythm. Full road width, and
+        // it does NOT skip curves — dirt mid-hairpin is the point. Start line clean.
+        const u = Math.sin(i * 0.0145) + 0.6 * Math.sin(i * 0.0043 + 1.7);
+        if (u > 0 && i > 200 && !s.animal) s.hz = { t: 'dirt', o: 0, w: 1.15 };
       }
-      // Pothole MINEFIELDS: every ~600 segs, a 12-seg cluster packed across all three
-      // lanes — there is no clean line, only the least-bad one (or a Third Wheel).
+      // Pothole MINEFIELDS on the asphalt halves: every ~600 segs, a 12-seg cluster
+      // packed across all three lanes — no clean line, only the least-bad one.
       for (let i = 0; i < N; i++) {
         const s = segs[i];
-        if ((i + 320) % 601 < 12 && Math.abs(s.curve) < 5 && !s.hz && !s.animal) s.hz = { t: 'pot', o: ((i * 7) % 3 - 1) * 0.5 };   // +320 phase keeps the start line clean
-        else if (Math.abs(s.curve) < 5 && i % 47 === 9 && !s.hz) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
+        if (s.hz) continue;
+        if ((i + 320) % 601 < 12 && Math.abs(s.curve) < 5 && !s.animal) s.hz = { t: 'pot', o: ((i * 7) % 3 - 1) * 0.5 };   // +320 phase keeps the start line clean
+        else if (Math.abs(s.curve) < 5 && i % 47 === 9) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
       }
-      dirtRunsAll(8, 26, 60);   // whole-road dirt stretches
-      dirtRuns(10, 28, 70);     // plus the usual single-lane runs
     } },
   { name: 'The School Run', d1: 'School zone — buses everywhere', d2: 'Mind the crossing guards!',
     sky: '#9CCFE8', mtFar: '#A9BCC7', mtNear: '#8AA0AC', ridge: '#7FAE82', gA: '#7CB85A', gB: '#70AC50',
@@ -423,8 +449,8 @@ const THEMES = [
       // fractions below (0.26 / 0.52 / 0.76).
       // forest: twisty
       for (let k = 0; k < 12; k++) { addRoad(0, 120 + (k * 31 % 60), 0, 0); addRoad(40, 100 + (k * 17 % 50), 40, (k % 2 ? -1 : 1) * (3 + (k * 7 % 4) * 0.5)); }
-      // cliffs: sweeping, exposed
-      for (let k = 0; k < 10; k++) { addRoad(0, 130 + (k * 29 % 60), 0, 0); addRoad(50, 120 + (k * 19 % 60), 50, (k % 2 ? 1 : -1) * (3 + (k * 5 % 3) * 0.5)); }
+      // cliffs: the storm leg — Big-Sir twist, exposed, relentless (rain hits here too)
+      for (let k = 0; k < 16; k++) { addRoad(0, 55 + (k * 23 % 50), 0, 0); addRoad(30, 90 + (k * 19 % 50), 30, (k % 2 ? 1 : -1) * (4.2 + (k * 5 % 5) * 0.6)); }
       // desert: fast and open
       for (let k = 0; k < 7; k++) { addRoad(0, 240 + (k * 41 % 120), 0, 0); addRoad(60, 150 + (k * 23 % 60), 60, (k % 2 ? -1 : 1) * (2 + (k * 3 % 2) * 0.5)); }
       // night city: gentle, lamp-lit, then the run home
@@ -441,7 +467,7 @@ const THEMES = [
           if (Math.abs(s.curve) < 5 && i % 97 === 20) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
           if (i % 211 === 60 && Math.abs(s.curve) < 4) s.animal = { t: 'deer', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
           else if (i % 227 === 80 && Math.abs(s.curve) < 5 && !s.hz) s.animal = { t: 'squir', o: ((i * 17) % 3 - 1) * 0.5, hit: false };
-        } else if (f < 0.52) { // cliffs — fatal on the left
+        } else if (f < 0.52) { // cliffs — fatal on the left, hills cranked to Big Sir grade
           s.cA = '#A3AD6E'; s.cB = '#98A263'; s.clf = true;
           if (i % 9 === 2) s.spr = { t: 'pine', o: 1.7 + (i * 5 % 8) / 5 };
           else if (i % 17 === 5) s.spr = { t: 'rock', o: 1.5 + (i * 3 % 5) / 5 };
@@ -458,13 +484,20 @@ const THEMES = [
           if (Math.abs(s.curve) < 5 && i % 73 === 15) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
         }
       }
+      // The cliffs leg climbs and dives: amplify the base hills up to Big-Sir grade,
+      // ramping smoothly in and out so the road stays continuous at the zone edges.
+      // (Both endpoints of a segment use the same formula, so y stays seamless.)
+      const amp = f2 => (f2 < 0.26 || f2 > 0.52) ? 1 : 1 + 1.6 * Math.sin((f2 - 0.26) / 0.26 * Math.PI);
+      for (let i = 0; i < N; i++) { const s = segs[i]; s.y1 *= amp(i / N); s.y2 *= amp((i + 1) / N); }
     } }
 ];
 
 function buildCourse(c) {
   segs = []; T = THEMES[c]; T.build();
   N = segs.length; trackLen = N * segLen;
-  const hy = i => Math.sin(i / N * Math.PI * T.hF1) * T.hA1 + Math.sin(i / N * Math.PI * T.hF2) * T.hA2;
+  // T.climb (p2p only): a steady net elevation gain on top of the rollers —
+  // Escape from Lodi's mountain ascent. Loop tracks must not use it (seam jump).
+  const hy = i => Math.sin(i / N * Math.PI * T.hF1) * T.hA1 + Math.sin(i / N * Math.PI * T.hF2) * T.hA2 + (T.climb ? T.climb * (i / N) : 0);
   for (let i = 0; i < N; i++) {
     const s = segs[i];
     s.y1 = hy(i); s.y2 = hy(i + 1);
@@ -494,9 +527,10 @@ const BIKES = [
   { name: 'CPA999', kind: 'rice', tier: 2, col: '#7F77DD', col2: '#FAC775', snd: 'rice', ts: 1.22, ac: 1.3, br: 1.1, hd: 1.3, hz: 0.2, tough: 0.2, armor: 0,
     bars: [0.95, 1, 0.65, 0.15, 0.2, 0.9], fl: 'Barely street legal' },
   // --- Tier 3: gimmick machines. sp = special on SPACE ---
-  // YIKES! mode (Space) is now genuinely insane — see the boost block in main.js.
-  { name: 'Electrode', kind: 'volt', tier: 3, col: '#E8EAF0', col2: '#4DD8E8', snd: 'volt', ts: 1.24, ac: 1.3, br: 1.1, hd: 1.15, hz: 0.3, tough: 0.4, armor: 0, sp: 'boost',
-    bars: [1, 0.92, 0.65, 0.25, 0.3, 0.75], fl: "We're goin to Mars!" },
+  // Base stats are Duke-level by design (Tim: "should ALREADY be maxed") — and then
+  // YIKES! mode (Space) roughly doubles it, arriving almost instantly (main.js).
+  { name: 'Electrode', kind: 'volt', tier: 3, col: '#E8EAF0', col2: '#4DD8E8', snd: 'volt', ts: 1.3, ac: 1.36, br: 1.1, hd: 1.15, hz: 0.3, tough: 0.4, armor: 0, sp: 'boost',
+    bars: [1, 1, 0.65, 0.25, 0.3, 0.75], fl: "We're goin to Mars!" },
   { name: "Ewan MacGregor's Bike", kind: 'dakar', tier: 3, col: '#2E6FB8', col2: '#E24B4A', snd: 'enduro', ts: 1.0, ac: 1.1, br: 1.25, hd: 1.25, hz: 0.95, tough: 0.8, armor: 0, sp: 'jump',
     bars: [0.65, 0.6, 0.85, 0.7, 1, 0.85], fl: "He won't miss it" },
   // The Police bike is a Superbike underneath (fast, fragile) — the siren clears the
