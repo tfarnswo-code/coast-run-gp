@@ -741,6 +741,32 @@ const PX_TRUCK_F = [
   '.kttkttk..',
   '..kk..kk..'
 ];
+// Flat-front coach: destination board (w) over a tall windscreen, stripe low,
+// headlights in the bumper. Oncoming buses joined the mix June 12 — only the
+// REAR view carries lettering, so a bus can face you without reading backwards.
+const PX_BUS_F = [
+  '.kkkkkkkkk',
+  '.k11111111',
+  '.k1wwwwwww',
+  '.k11111111',
+  '.k1gggggg.',
+  '.k1gggggg.',
+  '.k1gggggg.',
+  '.k1gggggg.',
+  '.k11111111',
+  '.k11111111',
+  '.k12222222',
+  '.k11111111',
+  '.k11111111',
+  '.k11111111',
+  '.k11111111',
+  '.kssssssss',
+  '.kffk11111',
+  '.kssssssss',
+  '.kttk.....',
+  '.kttk.....',
+  '..kk......'
+];
 
 // ============================ WILDLIFE ============================
 // Redrawn 2026-06-11 to Tim's pixel reference: proper buck with a real antler

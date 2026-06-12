@@ -22,6 +22,20 @@ const UPM = 248308;                                       // road units per disp
 
 function B() { return BIKES[curBike]; }
 
+const TRAF_COLS = ['#5F5E5A', '#185FA5', '#9AB0BC', '#72243E', '#EF9F27', '#0F6E56', '#B4B2A9', '#444441', '#993C1D', '#EF9F27'];
+const TAXI_COLS = ['#EFC727', '#EFC727', '#9AB0BC', '#EFC727', '#E24B4A', '#EFC727', '#B4B2A9', '#EFC727', '#185FA5', '#EFC727'];
+// Oncoming traffic re-rolls its identity every respawn (Tim: "more variety, less
+// volume") — a fresh type, colour and speed each time it comes back at you, so the
+// stream reads as different vehicles without raising the count. Buses CAN face you
+// (only the rear view carries lettering).
+function rerollOncoming(t) {
+  const roll = Math.random();
+  t.type = roll < 0.6 ? 'car' : roll < 0.85 ? 'truck' : 'bus';
+  t.cw = t.type === 'car' ? 0.26 : t.type === 'truck' ? 0.27 : 0.33;
+  t.col = (T.taxi ? TAXI_COLS : TRAF_COLS)[Math.floor(Math.random() * 10)];
+  t.speed = maxSpeed * (0.2 + Math.random() * 0.14);
+}
+
 // Rain can be theme-wide (Mystery rolls) or zone-local: The Coast Run's squall
 // soaks the cliffs leg only (f 0.28-0.52). Ask per track position, so each rival
 // gets wet where THEY are, not where the player is.
@@ -71,7 +85,10 @@ function reset() {
   // A theme may override with its own rivalMul (Salt Flats sets the bar highest).
   // Rain slows the rivals too (cruise via rivalDrive, braking, spill odds) — without
   // this the player penalties would make wet races unwinnable.
-  const rmul = T.rivalMul || (sel >= 8 ? 1.22 : sel >= 4 ? 1.1 : 1.04);
+  // Two-way courses concede 8% rival pace (Tim, June 12): surviving oncoming traffic
+  // means waiting behind slowpokes and darting, and the rivals must pay for that
+  // strategy like the player does. (Coast Run's zone leg keeps full pace — Final Boss.)
+  const rmul = (T.rivalMul || (sel >= 8 ? 1.22 : sel >= 4 ? 1.1 : 1.04)) * (T.oncoming ? 0.92 : 1);
   // Each rival is a driver, not a metronome: cruise = personality top speed (higher than
   // the old constant since avoidance now costs them time), skill = reaction quality
   // (backmarkers are clumsy and crash; front-runners rarely blow it).
@@ -96,8 +113,7 @@ function reset() {
   const oncShare = T.oncFrac === undefined ? 0.4 : T.oncFrac;
   let oncN = 0;   // eligible (non-bus) vehicles seen so far
   const tt = ['car', 'car', 'truck', 'car', 'bus', 'car', 'truck', 'car', 'car', 'bus'];
-  let tc = ['#5F5E5A', '#185FA5', '#9AB0BC', '#72243E', '#EF9F27', '#0F6E56', '#B4B2A9', '#444441', '#993C1D', '#EF9F27'];
-  if (T.taxi) tc = ['#EFC727', '#EFC727', '#9AB0BC', '#EFC727', '#E24B4A', '#EFC727', '#B4B2A9', '#EFC727', '#185FA5', '#EFC727'];
+  const tc = T.taxi ? TAXI_COLS : TRAF_COLS;
   const sbusAt = Math.floor(nt / 2); // exactly one Greisen school bus every run
   for (let i = 0; i < nt; i++) {
     // The School Run: every third vehicle is a Greisen bus — the whole district fleet
@@ -369,7 +385,12 @@ function rivalPlan(r) {
     .sort((a, b) => Math.abs(a - r.tgt) - Math.abs(b - r.tgt));
   for (const ln of lanes) {
     if (Math.abs(ln - r.tgt) < 0.01) continue;
-    if (!rivalBlocker(r, ln, look * 1.2, 0.1)) { r.tgt = ln; r.follow = null; return; }
+    // Darting into the ONCOMING lane demands a real gap (Tim: the only way to
+    // survive two-way is wait-behind-traffic-then-dart, "extremely hard since the
+    // opponents do it with such relative ease") — rivals now need the left lane
+    // clear ~2.2x further out than a normal pass, so they queue like the player.
+    const lk = (T.oncoming || zOn) && ln < 0 ? look * 2.6 : look * 1.2;
+    if (!rivalBlocker(r, ln, lk, 0.1)) { r.tgt = ln; r.follow = null; return; }
   }
   r.follow = cur.soft ? null : cur;   // boxed in: match the blocker's pace (potholes: just eat it)
 }
@@ -658,14 +679,19 @@ function update(dt) {
     for (const t of traffic) {
       t.z += t.speed * (t.dir || 1) * dt;
       // On endless oncoming tracks (Wrong Way Express), recycle traffic that falls well
-      // behind back to ahead of the player so the gauntlet keeps coming.
+      // behind back to ahead of the player so the gauntlet keeps coming. The respawn
+      // gap is THE oncoming-volume knob: every oncoming vehicle loops forever, so its
+      // cadence — not the traffic count — is what the player actually experiences.
+      // T.oncGap stretches the gap per theme (Bigger Sir runs 2 = half the encounters).
       if (T.oncoming) {
         const rel = t.z - position;
         if (rel < -segLen * 6) {
-          t.z = position + segLen * (45 + Math.floor(Math.random() * 70));
+          const gap = t.dir === -1 ? (T.oncGap || 1) : 1;
+          t.z = position + segLen * (45 + Math.floor(Math.random() * 70)) * gap;
           // keep it on its own side of the road (oncoming left, with-traffic right);
           // stopped school buses reappear parked on the shoulder again
           t.base = t.stopped ? 0.62 : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
+          if (t.dir === -1) rerollOncoming(t);
         }
       }
       // Zone-confined oncoming pool (Coast Run desert leg): recycle within the zone
@@ -678,6 +704,7 @@ function update(dt) {
           const tgt = position > z0 ? position + segLen * (45 + Math.floor(Math.random() * 70)) : z1 - Math.random() * (z1 - z0) * 0.5;
           if (tgt < z1 - segLen * 2) {
             t.z = tgt; t.base = -(0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
+            rerollOncoming(t);
           } else t.zn = false;   // player is past the leg — let this one drift away
         }
       }
@@ -946,7 +973,7 @@ function render() {
           else if (v.kind === 'car') { const sw = w0 * 0.3; if (sw > 2) (v.o.dir === -1 ? drawCarFront : drawCar)(sx, sy, sw, v.o.col, nightNow); }
           else if (v.kind === 'truck') { const sw = w0 * 0.34; if (sw > 2) (v.o.dir === -1 ? drawTruckFront : drawTruck)(sx, sy, sw, v.o.col, nightNow); }
           else if (v.kind === 'sbus') { const sw = w0 * 0.34; if (sw > 2) drawSchoolBus(sx, sy, sw, v.o.stopped, nightNow); }
-          else { const sw = w0 * 0.34; if (sw > 2) drawBus(sx, sy, sw, v.o.col, nightNow); }
+          else { const sw = w0 * 0.34; if (sw > 2) (v.o.dir === -1 ? drawBusFront : drawBus)(sx, sy, sw, v.o.col, nightNow); }
         }
       }
       cx.restore();

@@ -168,6 +168,12 @@ function drawBus(x, y, w, col, night) {
   if (night) tailLights(x, y, w, 0.42, 0.25);
 }
 
+function drawBusFront(x, y, w, col, night) {
+  cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.beginPath(); cx.ellipse(x, y + 2, w * 0.55, w * 0.1, 0, 0, 7); cx.fill();
+  pxBlit(pxSprite('busF', PX_BUS_F, { 1: col, 2: hexMix(col, 0.6) }, true), x, y, w / 20, 0);
+  if (night) headLights(x, y, w, 0.42, 0.28);
+}
+
 // The Greisen school bus — full-grid sprite so the name reads. On The School Run the
 // whole fleet is out; stopped buses get alternating red wig-wag lights up top.
 function drawSchoolBus(x, y, w, stopped, night) {

@@ -259,7 +259,11 @@ const THEMES = [
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
     // Tim's tune (June 12): ~half the previous total, cut asymmetrically — oncoming
     // down 75% (oncFrac 0.25 of traf 4 ≈ 1) and same-direction down 25% (≈ 3).
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25,
+    // Still unfinishable without cheats (Tim, June 12 round 4) — oncGap 2 doubles
+    // the respawn gap so the recycled oncoming car returns half as often, and
+    // rivalMul 1.0 (under the tier-2 1.1, ×0.92 two-way = 0.92 effective) because
+    // wait-and-dart costs the player laps and the rivals must feel it too.
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25, oncGap: 2, rivalMul: 1.0,
     build: bsBuild, dec: bsDecR },
   // Inherited the old Apocalypse surface treatment (Tim's call): whole-road dirt,
   // pothole minefields, cows — scaled down to a tier-2 lap.
