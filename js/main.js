@@ -96,7 +96,7 @@ function reset() {
   // ladder, higher skill floor, and rarer self-spills (see rivalDrive).
   for (let i = 0; i < 12; i++) {
     const skill = 0.42 + (i / 11) * 0.55;
-    const lane = T.oncoming ? [0.25, 0.55][i % 2] : [-0.45, 0, 0.45][i % 3];
+    const lane = (T.oncoming && !T.allOnc) ? [0.25, 0.55][i % 2] : [-0.45, 0, 0.45][i % 3];
     rivals.push({
       z: (i + 1) * rGap, off: lane, tgt: lane,
       cruise: maxSpeed * (0.49 + i * 0.028) * rmul, speed: maxSpeed * (0.49 + i * 0.028) * rmul * 0.5,
@@ -111,6 +111,11 @@ function reset() {
   // NON-BUS vehicles only and spread evenly through the spawn order (rounded
   // Bresenham, so small counts still land ~share·eligible). Bigger Sir runs 25%.
   const oncShare = T.oncFrac === undefined ? 0.4 : T.oncFrac;
+  // Traffic spread along the track: default 8%–92%. Long no-recycle p2p courses
+  // (Coast Run) start earlier and run nearly to the finish so the road isn't empty
+  // before the first car or after the last.
+  const trafStart = T.trafStart === undefined ? 0.08 : T.trafStart;
+  const trafSpan = T.trafSpan === undefined ? 0.84 : T.trafSpan;
   let oncN = 0;   // eligible (non-bus) vehicles seen so far
   const tt = ['car', 'car', 'truck', 'car', 'bus', 'car', 'truck', 'car', 'car', 'bus'];
   const tc = T.taxi ? TAXI_COLS : TRAF_COLS;
@@ -118,23 +123,26 @@ function reset() {
   for (let i = 0; i < nt; i++) {
     // The School Run: every third vehicle is a Greisen bus — the whole district fleet
     // is out, and every other bus is STOPPED on the right shoulder, lights flashing.
-    const ty = (T.school && i % 3 === 0) || i === sbusAt ? 'sbus' : tt[i % 10];
+    const ty = (T.school && i % 3 === 0) || (i === sbusAt && !T.allOnc) ? 'sbus' : tt[i % 10];
     const stopped = T.school && ty === 'sbus' && i % 6 === 0;
     // Two-way roads: oncShare of the non-bus traffic faces you (incl. some trucks);
     // the rest are slower with-traffic you must overtake — which is what forces you
     // left into the oncoming lane to pass. Buses (incl. Greisen) always run with
     // the flow so their lettering reads right.
     const elig = T.oncoming && ty !== 'sbus' && ty !== 'bus';
-    const onc = elig && Math.floor(++oncN * oncShare + 0.5) > Math.floor((oncN - 1) * oncShare + 0.5);
+    const onc = T.allOnc || (elig && Math.floor(++oncN * oncShare + 0.5) > Math.floor((oncN - 1) * oncShare + 0.5));
     // Realistic two-way road: you drive on the RIGHT, so with-traffic keeps the right
     // lanes (positive offset) and oncoming holds the LEFT lanes (negative). The two
     // streams never share a lane — nothing drives through anything — and an inner + outer
     // lane on each side means there's no free ride straight down the centre line.
-    const off = stopped ? 0.62 : T.oncoming
-      ? (onc ? -1 : 1) * (0.25 + (i % 2) * 0.3)
+    // allOnc: every vehicle oncoming, but spread across all three lanes like a
+    // one-way road (no separated streams) — the third traffic mode.
+    const off = stopped ? 0.62
+      : T.allOnc ? [-0.5, 0, 0.5][i % 3]
+      : T.oncoming ? (onc ? -1 : 1) * (0.25 + (i % 2) * 0.3)
       : [-0.5, 0, 0.5][i % 3];
     traffic.push({
-      z: trackLen * (0.08 + i * 0.84 / nt), off: off, base: off, dir: onc ? -1 : 1, stopped: stopped,
+      z: trackLen * (trafStart + i * trafSpan / nt), off: off, base: off, dir: onc ? -1 : 1, stopped: stopped,
       speed: stopped ? 0 : maxSpeed * (onc ? 0.26 : 0.2 + (i % 4) * 0.045), type: ty,
       col: tc[i % 10], cw: ty === 'car' ? 0.26 : ty === 'truck' ? 0.27 : 0.33
     });
@@ -381,7 +389,7 @@ function rivalPlan(r) {
   // Inside a zone-confined oncoming leg (Coast Run desert) rivals plan with the
   // keep-right lane set, same as on full two-way tracks.
   const zOn = T.oncZone && (() => { const f = (((r.z % trackLen) + trackLen) % trackLen) / trackLen; return f > T.oncZone[0] - 0.01 && f < T.oncZone[1]; })();
-  const lanes = (T.oncoming || zOn ? [0.25, 0.55, -0.25] : [-0.45, 0, 0.45]).slice()
+  const lanes = ((T.oncoming || zOn) && !T.allOnc ? [0.25, 0.55, -0.25] : [-0.45, 0, 0.45]).slice()
     .sort((a, b) => Math.abs(a - r.tgt) - Math.abs(b - r.tgt));
   for (const ln of lanes) {
     if (Math.abs(ln - r.tgt) < 0.01) continue;
@@ -389,7 +397,7 @@ function rivalPlan(r) {
     // survive two-way is wait-behind-traffic-then-dart, "extremely hard since the
     // opponents do it with such relative ease") — rivals now need the left lane
     // clear ~2.2x further out than a normal pass, so they queue like the player.
-    const lk = (T.oncoming || zOn) && ln < 0 ? look * 2.6 : look * 1.2;
+    const lk = (T.oncoming || zOn) && !T.allOnc && ln < 0 ? look * 2.6 : look * 1.2;
     if (!rivalBlocker(r, ln, lk, 0.1)) { r.tgt = ln; r.follow = null; return; }
   }
   r.follow = cur.soft ? null : cur;   // boxed in: match the blocker's pace (potholes: just eat it)
@@ -690,7 +698,7 @@ function update(dt) {
           t.z = position + segLen * (45 + Math.floor(Math.random() * 70)) * gap;
           // keep it on its own side of the road (oncoming left, with-traffic right);
           // stopped school buses reappear parked on the shoulder again
-          t.base = t.stopped ? 0.62 : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
+          t.base = t.stopped ? 0.62 : T.allOnc ? [-0.5, 0, 0.5][Math.floor(Math.random() * 3)] : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
           if (t.dir === -1) rerollOncoming(t);
         }
       }

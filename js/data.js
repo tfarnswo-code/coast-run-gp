@@ -227,15 +227,15 @@ const THEMES = [
     build: upBuild, dec: function () { upDec(353); } },
   { name: 'Big Sir', d1: 'Pacific cliffs · very twisty', d2: 'Off the left edge is fatal',
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
-    dirt: 'rgba(128,95,60,0.85)', cliff: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28,
+    dirt: 'rgba(128,95,60,0.85)', cliff: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, rivalMul: 1.092,  // +5% rivals (Tim, June 12): 1.04 default ×1.05
     build: bsBuild, dec: bsDec },
   { name: 'Baja', d1: 'Open desert · fast straights', d2: 'Dirt everywhere · stray cattle',
     sky: '#AFD8EC', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
-    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 700, hF1: 6, hF2: 16, sunR: 34,
+    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 700, hF1: 6, hF2: 16, sunR: 34, rivalMul: 1.092,  // +5% rivals (Tim, June 12): 1.04 default ×1.05
     build: bjBuild, dec: function () { bjDec(37, 367, 9, 55); } },
   { name: 'Neon City', d1: 'Urban night run', d2: 'Taxis, manholes, lampposts',
     sky: '#0f1322', mtFar: '#1b2030', mtNear: '#141823', ridge: null, gA: '#2a2d33', gB: '#26292e',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 900, hA2: 300, hF1: 6, hF2: 16, sunR: 22, night: true, taxi: true, traf: 18,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 900, hA2: 300, hF1: 6, hF2: 16, sunR: 22, night: true, taxi: true, traf: 18, rivalMul: 1.092,  // +5% rivals (Tim, June 12): 1.04 default ×1.05
     rA: '#4a4d54', rB: '#45484e', lane: '#d8c84a',
     build: function () {
       addRoad(0, 90, 0, 0); addRoad(30, 50, 30, 2.5); addRoad(0, 60, 0, 0); addRoad(35, 45, 35, -3.5);
@@ -252,7 +252,7 @@ const THEMES = [
     } },
   { name: 'Upstate Stampede', d1: 'The deer own it now', d2: 'An absurd number of deer',
     sky: '#8FCBE0', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: '#7FAE82', gA: '#6AAE4E', gB: '#5F9F45',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28, lock: true,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28, lock: true, rivalMul: 1.155,  // +5% rivals (Tim, June 12): 1.1 tier-2 default ×1.05
     build: upBuild, dec: function () { upDec(53); squirrels(151); } },
   // cliffR: the fatal drop is on the RIGHT edge — and half the traffic comes at you
   { name: 'Bigger Sir', d1: 'Two-way on the cliffs', d2: 'The drop is on YOUR side now',
@@ -263,7 +263,7 @@ const THEMES = [
     // the respawn gap so the recycled oncoming car returns half as often, and
     // rivalMul 1.0 (under the tier-2 1.1, ×0.92 two-way = 0.92 effective) because
     // wait-and-dart costs the player laps and the rivals must feel it too.
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25, oncGap: 2, rivalMul: 1.0,
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25, oncGap: 2, rivalMul: 0.9,  // −10% rivals (Tim, June 12): 1.0 → 0.9; ×0.92 two-way ⇒ 0.828 effective
     build: bsBuild, dec: bsDecR },
   // Inherited the old Apocalypse surface treatment (Tim's call): whole-road dirt,
   // pothole minefields, cows — scaled down to a tier-2 lap.
@@ -306,7 +306,7 @@ const THEMES = [
   { name: 'Salt Flats', d1: 'Long straights · let er rip', d2: 'Light traffic · pure speed',
     sky: '#BFE3F2', mtFar: '#A99BB5', mtNear: '#8B7E99', ridge: null, gA: '#E6E0CE', gB: '#DED8C4',
     dirt: 'rgba(150,130,95,0.7)', cliff: false, hA1: 350, hA2: 120, hF1: 6, hF2: 14, sunR: 36,
-    lock: true, epic: true, p2p: true, traf: 18, rivalMul: 1.9,   // Electrode without YIKES must NOT podium here
+    lock: true, epic: true, p2p: true, traf: 18, rivalMul: 1.71,   // −10% rivals (Tim, June 12): 1.9 → 1.71
     build: function () {
       // Epic-length flat-out run (~2x a tier-1 race) — huge straights, gentle sweepers
       addRoad(0, 300, 0, 0);
@@ -353,10 +353,10 @@ const THEMES = [
       dirtRuns(6, 20, 30);
       squirrels(173);
     } },
-  { name: 'Wrong Way Express', d1: 'Half the traffic comes AT you', d2: 'Thread the gaps or part them',
+  { name: 'Wrong Way Express', d1: 'It ALL comes at you', d2: 'Both lanes oncoming · open road',
     sky: '#BCD6E8', mtFar: '#9BA8B5', mtNear: '#7C8A99', ridge: '#79976C', gA: '#6E8F5A', gB: '#648251',
     dirt: 'rgba(120,100,70,0.7)', cliff: false, hA1: 520, hA2: 160, hF1: 6, hF2: 12, sunR: 32,
-    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 10, oncFrac: 0.55,   // half comes AT you — that's the whole point of this track
+    lock: true, epic: true, p2p: true, oncoming: 0.5, allOnc: true, traf: 10, oncGap: 8, rivalMul: 1.366, trafStart: 0.02, trafSpan: 0.5,   // Tim, June 12: ALL traffic oncoming across BOTH lanes (a third traffic mode) — easy terrain, but every car is head-on. rivalMul 1.366 → 1.257 effective (+12% vs default, ×0.92 two-way still applies). To adjust feel: RAISE traf = more traffic, LOWER = less; LOWER oncGap = tighter cadence.
     build: function () {
       // The gauntlet runs LONG now — sweepers and straights, traffic never stops coming
       addRoad(0, 220, 0, 0);
@@ -383,7 +383,7 @@ const THEMES = [
   { name: 'Baja Apocalypse', d1: 'Half dirt · all chaos', d2: 'Twisty, hilly, a wild ride',
     sky: '#E8B98A', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
     dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 7000, hA2: 3400, hF1: 29, hF2: 76, sunR: 38,
-    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 8,
+    lock: true, epic: true, p2p: true, oncoming: 0.5, traf: 8, rivalMul: 1.342,  // +10% rivals (Tim, June 12): 1.22 default ×1.1 → ×0.92 two-way ⇒ 1.235 effective. Traffic NOT bumped — recycling keeps these lanes populated (measured ~183-seg with-flow gap)
     build: function () {
       // Big-Sir twist on what's left of the desert road
       addRoad(0, 140, 0, 0);
@@ -467,7 +467,7 @@ const THEMES = [
   { name: 'The Coast Run', d1: 'Forest · cliffs · desert · city', d2: 'The namesake. The finale.',
     sky: '#8FD0E8', mtFar: '#9A8FA8', mtNear: '#7A7088', ridge: null, gA: '#6AAE4E', gB: '#5F9F45',
     dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 1900, hA2: 650, hF1: 10, hF2: 22, sunR: 30,
-    lock: true, epic: true, p2p: true, coastrun: true, traf: 44, rivalMul: 1.38, oncZone: [0.52, 0.76],
+    lock: true, epic: true, p2p: true, coastrun: true, traf: 150, rivalMul: 1.656, trafStart: 0.03, trafSpan: 0.94, oncZone: [0.52, 0.76],  // Tim, June 12: +20% rivals (1.38→1.656) & far more with-flow traffic. This is a long p2p with NO with-flow recycle, so it needs a high count + early start, or the lanes read empty (measured 833-seg gap at traf 44)
     build: function () {
       // The finale runs ~3x a tier-1 race. Zone sizes roughly track the dec()
       // fractions below (0.26 / 0.52 / 0.76).
@@ -572,8 +572,8 @@ const BIKES = [
     bars: [0.65, 0.6, 0.85, 0.7, 1, 0.85], fl: "He won't miss it" },
   // The Police bike is a Superbike underneath (fast, fragile) — the siren clears the
   // road so all that speed is survivable. sp: 'siren' parts traffic (incl. oncoming).
-  { name: 'Chippy', kind: 'police', tier: 3, col: '#E8EAF0', col2: '#1c1c22', snd: 'rice', ts: 1.25, ac: 1.33, br: 1.14, hd: 1.34, hz: 0.24, tough: 0.22, armor: 0, sp: 'siren',
-    bars: [1, 1, 0.72, 0.22, 0.25, 0.95], fl: 'Protect and Serve!' },
+  { name: 'Chippy', kind: 'police', tier: 3, col: '#E8EAF0', col2: '#1c1c22', snd: 'rice', ts: 1.21, ac: 1.29, br: 1.14, hd: 1.34, hz: 0.24, tough: 0.22, armor: 0, sp: 'siren',  // ts/ac −1 notch (Tim, June 12): 1.25→1.21, 1.33→1.29
+    bars: [0.95, 0.95, 0.72, 0.22, 0.25, 0.95], fl: 'Protect and Serve!' },
   // noPot: potholes can't kick it. The survival machine — you won't podium, you WILL finish.
   { name: 'Third Wheel', kind: 'trike', tier: 3, col: '#7A2638', col2: '#E8D9A8', snd: 'hog', ts: 0.93, ac: 0.78, br: 0.92, hd: 0.55, hz: 0.9, tough: 1, armor: 3, noPot: true,
     bars: [0.38, 0.5, 0.4, 1, 0.9, 0.2], fl: "it's not a tricycle! It's a Hog!" },
