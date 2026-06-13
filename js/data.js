@@ -227,7 +227,7 @@ const THEMES = [
     build: upBuild, dec: function () { upDec(353); } },
   { name: 'Big Sir', d1: 'Pacific cliffs · very twisty', d2: 'Off the left edge is fatal',
     sky: '#9AD1EC', mtFar: '#B9A98C', mtNear: '#8E8270', ridge: null, gA: '#A3AD6E', gB: '#98A263',
-    dirt: 'rgba(128,95,60,0.85)', cliff: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, rivalMul: 1.092,  // +5% rivals (Tim, June 12): 1.04 default ×1.05
+    dirt: 'rgba(128,95,60,0.85)', cliff: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, traf: 11, rivalMul: 1.092,  // +5% rivals (Tim, June 12) · traffic 10→11 +10% (Tim, June 13)
     build: bsBuild, dec: bsDec },
   { name: 'Baja', d1: 'Open desert · fast straights', d2: 'Dirt everywhere · stray cattle',
     sky: '#AFD8EC', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
@@ -252,7 +252,7 @@ const THEMES = [
     } },
   { name: 'Upstate Stampede', d1: 'The deer own it now', d2: 'An absurd number of deer',
     sky: '#8FCBE0', mtFar: '#A9BCC7', mtNear: '#7F97A3', ridge: '#7FAE82', gA: '#6AAE4E', gB: '#5F9F45',
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28, lock: true, rivalMul: 1.155,  // +5% rivals (Tim, June 12): 1.1 tier-2 default ×1.05
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, hA1: 2800, hA2: 900, hF1: 8, hF2: 18, sunR: 28, lock: true, rivalMul: 1.213,  // +5% rivals ×2 (Tim, June 12 + 13): 1.1 ×1.05 ×1.05 — still consistently podiumed on tier-1
     build: upBuild, dec: function () { upDec(53); squirrels(151); } },
   // cliffR: the fatal drop is on the RIGHT edge — and half the traffic comes at you
   { name: 'Bigger Sir', d1: 'Two-way on the cliffs', d2: 'The drop is on YOUR side now',
@@ -263,13 +263,13 @@ const THEMES = [
     // the respawn gap so the recycled oncoming car returns half as often, and
     // rivalMul 1.0 (under the tier-2 1.1, ×0.92 two-way = 0.92 effective) because
     // wait-and-dart costs the player laps and the rivals must feel it too.
-    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25, oncGap: 2, rivalMul: 0.9,  // −10% rivals (Tim, June 12): 1.0 → 0.9; ×0.92 two-way ⇒ 0.828 effective
+    dirt: 'rgba(128,95,60,0.85)', cliff: false, cliffR: true, hA1: 4800, hA2: 1400, hF1: 10, hF2: 22, sunR: 28, lock: true, oncoming: 0.5, traf: 4, oncFrac: 0.25, oncGap: 2, rivalMul: 0.945,  // Tim: −10% (June 12) then +5% (June 13) → 0.945; ×0.92 two-way ⇒ 0.869 effective
     build: bsBuild, dec: bsDecR },
   // Inherited the old Apocalypse surface treatment (Tim's call): whole-road dirt,
   // pothole minefields, cows — scaled down to a tier-2 lap.
   { name: 'Baja Inferno', d1: 'The road has given up', d2: 'Both lanes dirt · minefields',
     sky: '#EFC9A0', mtFar: '#C7A57E', mtNear: '#A57F54', ridge: '#D8B97F', gA: '#D9BC85', gB: '#CFB279',
-    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 700, hF1: 6, hF2: 16, sunR: 36, lock: true,
+    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 2600, hA2: 700, hF1: 6, hF2: 16, sunR: 36, lock: true, rivalMul: 1.155,  // +5% rivals (Tim, June 13): 1.1 tier-2 default ×1.05 — was podiumable on tier-1
     build: bjBuild, dec: function () {
       for (let i = 0; i < N; i++) {
         const s = segs[i];
@@ -356,11 +356,11 @@ const THEMES = [
   { name: 'Wrong Way Express', d1: 'It ALL comes at you', d2: 'Both lanes oncoming · open road',
     sky: '#BCD6E8', mtFar: '#9BA8B5', mtNear: '#7C8A99', ridge: '#79976C', gA: '#6E8F5A', gB: '#648251',
     dirt: 'rgba(120,100,70,0.7)', cliff: false, hA1: 520, hA2: 160, hF1: 6, hF2: 12, sunR: 32,
-    lock: true, epic: true, p2p: true, oncoming: 0.5, allOnc: true, traf: 10, oncGap: 8, rivalMul: 1.366, trafStart: 0.02, trafSpan: 0.5,   // Tim, June 12: ALL traffic oncoming across BOTH lanes (a third traffic mode) — easy terrain, but every car is head-on. rivalMul 1.366 → 1.257 effective (+12% vs default, ×0.92 two-way still applies). To adjust feel: RAISE traf = more traffic, LOWER = less; LOWER oncGap = tighter cadence.
+    lock: true, epic: true, p2p: true, oncoming: 0.5, allOnc: true, traf: 10, oncGap: 11, rivalMul: 1.366, trafStart: 0.02, trafSpan: 0.5,   // Tim: ALL traffic oncoming across BOTH lanes; ~1-in-5 ride the shoulder/edge (closes the shoulder cheese). rivalMul 1.366 → 1.257 effective (+12%). oncGap 11 eases the brutal back end but keeps it dense. To adjust: RAISE traf = more cars, LOWER oncGap = tighter cadence.
     build: function () {
       // The gauntlet runs LONG now — sweepers and straights, traffic never stops coming
       addRoad(0, 220, 0, 0);
-      for (let k = 0; k < 22; k++) {
+      for (let k = 0; k < 18; k++) {   // shortened ~1.5mi (Tim, June 13): 22→18 sweeper pairs
         addRoad(45 + (k % 2) * 5, 130 + (k * 31 % 60), 45 + (k % 2) * 5, (k % 2 ? -1 : 1) * (2 + (k * 7 % 4) * 0.5));
         addRoad(0, 180 + (k * 43 % 110), 0, 0);
       }
@@ -466,8 +466,8 @@ const THEMES = [
   // warning sign marks the start, and the zone has no animals (Tim's rule).
   { name: 'The Coast Run', d1: 'Forest · cliffs · desert · city', d2: 'The namesake. The finale.',
     sky: '#8FD0E8', mtFar: '#9A8FA8', mtNear: '#7A7088', ridge: null, gA: '#6AAE4E', gB: '#5F9F45',
-    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 1900, hA2: 650, hF1: 10, hF2: 22, sunR: 30,
-    lock: true, epic: true, p2p: true, coastrun: true, traf: 150, rivalMul: 1.656, trafStart: 0.03, trafSpan: 0.94, oncZone: [0.52, 0.76],  // Tim, June 12: +20% rivals (1.38→1.656) & far more with-flow traffic. This is a long p2p with NO with-flow recycle, so it needs a high count + early start, or the lanes read empty (measured 833-seg gap at traf 44)
+    dirt: 'rgba(110,80,48,0.9)', cliff: false, hA1: 4800, hA2: 1400, hF1: 120, hF2: 264, sunR: 30,  // Big-Sir-grade hills (Tim, June 13): grade = hA·π·hF/N, so on this ~12x-longer track hF must scale ~12x (10→120) to FEEL like Big Sir's 185, not a flat 13
+    lock: true, epic: true, p2p: true, coastrun: true, traf: 150, rivalMul: 1.739, trafStart: 0.03, trafSpan: 0.94, oncZone: [0.52, 0.76],  // Tim: +20% (June 12) then +5% (June 13) rivals → 1.739. Long p2p, NO with-flow recycle, so high count + early start. Traffic 150 is final (Tim: "just right").
     build: function () {
       // The finale runs ~3x a tier-1 race. Zone sizes roughly track the dec()
       // fractions below (0.26 / 0.52 / 0.76).
@@ -484,33 +484,37 @@ const THEMES = [
     dec: function () {
       for (let i = 0; i < N; i++) {
         const s = segs[i]; const f = i / N;
-        if (f < 0.26) { // forest
-          s.cA = '#6AAE4E'; s.cB = '#5F9F45';
-          if (i % 11 === 3) s.spr = { t: forestTree(i), o: (i % 2 ? 1 : -1) * (1.6 + (i * 7 % 6) / 6) };
-          else if (i % 13 === 0) s.spr = { t: 'bush', o: (i % 2 ? -1 : 1) * (2.1 + (i * 3 % 6) / 4) };
+        if (f < 0.26) { // forest — coastal cliff on the LEFT; roadside scenery hugs the RIGHT
+          s.cA = '#6AAE4E'; s.cB = '#5F9F45'; s.clf = true;
+          if (i % 11 === 3) s.spr = { t: forestTree(i), o: 1.6 + (i * 7 % 6) / 6 };
+          else if (i % 13 === 0) s.spr = { t: 'bush', o: 2.1 + (i * 3 % 6) / 4 };
           if (Math.abs(s.curve) < 5 && i % 97 === 20) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
           if (i % 211 === 60 && Math.abs(s.curve) < 4) s.animal = { t: 'deer', o: ((i * 13) % 3 - 1) * 0.5, hit: false };
           else if (i % 227 === 80 && Math.abs(s.curve) < 5 && !s.hz) s.animal = { t: 'squir', o: ((i * 17) % 3 - 1) * 0.5, hit: false };
-        } else if (f < 0.52) { // cliffs — fatal on the left, hills cranked to Big Sir grade
-          s.cA = '#A3AD6E'; s.cB = '#98A263'; s.clf = true;
-          if (i % 9 === 2) s.spr = { t: 'pine', o: 1.7 + (i * 5 % 8) / 5 };
-          else if (i % 17 === 5) s.spr = { t: 'rock', o: 1.5 + (i * 3 % 5) / 5 };
+        } else if (f < 0.52) { // cliffs — coastal cliff on the RIGHT now; scenery hugs the LEFT
+          s.cA = '#A3AD6E'; s.cB = '#98A263'; s.clfR = true;
+          if (i % 9 === 2) s.spr = { t: 'pine', o: -(1.7 + (i * 5 % 8) / 5) };
+          else if (i % 17 === 5) s.spr = { t: 'rock', o: -(1.5 + (i * 3 % 5) / 5) };
           if (Math.abs(s.curve) < 5 && i % 113 === 30) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
-        } else if (f < 0.76) { // desert — the oncoming-traffic leg, so NO cows here
-          s.cA = '#D9BC85'; s.cB = '#CFB279';
-          if (i % 9 === 4) s.spr = { t: desertCactus(i), o: (i % 2 ? 1 : -1) * (1.5 + (i * 7 % 7) / 6) };
-          else if (i % 13 === 6) s.spr = { t: 'rock', o: (i % 2 ? -1 : 1) * (1.6 + (i * 5 % 6) / 5) };
+        } else if (f < 0.76) { // desert — oncoming leg + LEFT cliff (the drop AND the head-on traffic are both on your left); scenery RIGHT
+          s.cA = '#D9BC85'; s.cB = '#CFB279'; s.clf = true;
+          if (i % 9 === 4) s.spr = { t: desertCactus(i), o: 1.5 + (i * 7 % 7) / 6 };
+          else if (i % 13 === 6) s.spr = { t: 'rock', o: 1.6 + (i * 5 % 6) / 5 };
           if (Math.abs(s.curve) < 5 && i % 53 === 9) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
-        } else { // night city
-          s.cA = '#34394A'; s.cB = '#2E3342';
-          if (i % 7 === 2) s.spr = { t: 'lamp', o: (i % 14 === 2 ? -1.35 : 1.35) };
+        } else { // night city — coastal cliff on the RIGHT; lamps on the LEFT
+          s.cA = '#34394A'; s.cB = '#2E3342'; s.clfR = true;
+          if (i % 7 === 2) s.spr = { t: 'lamp', o: -1.35 };
           if (Math.abs(s.curve) < 5 && i % 73 === 15) s.hz = { t: 'pot', o: ((i * 11) % 3 - 1) * 0.5 };
         }
       }
-      // The cliffs leg climbs and dives: amplify the base hills up to Big-Sir grade,
-      // ramping smoothly in and out so the road stays continuous at the zone edges.
-      // (Both endpoints of a segment use the same formula, so y stays seamless.)
-      const amp = f2 => (f2 < 0.26 || f2 > 0.52) ? 1 : 1 + 1.6 * Math.sin((f2 - 0.26) / 0.26 * Math.PI);
+      // Big hills in TWO legs now (Tim, June 13): a hilly forest opening AND the cliffs
+      // leg pushed harder. Each ramps smoothly to 1 at its zone edges so the road stays
+      // continuous (both endpoints of a segment use the same formula → seamless y).
+      // Hilly the whole way now (Tim, June 13: "hilly like Big Sir"), cliffs leg steepest,
+      // desert + city easing gentler so the oncoming leg and the run home stay readable.
+      // Continuous piecewise-linear in f, so the road never jumps at a zone seam.
+      const ampPts = [[0, 0.95], [0.28, 1.1], [0.40, 1.35], [0.52, 1.0], [0.70, 0.5], [1, 0.45]];
+      const amp = f2 => { for (let k = 1; k < ampPts.length; k++) { if (f2 <= ampPts[k][0]) { const a = ampPts[k - 1], b = ampPts[k]; return a[1] + (b[1] - a[1]) * (f2 - a[0]) / (b[0] - a[0]); } } return 0.45; };
       for (let i = 0; i < N; i++) { const s = segs[i]; s.y1 *= amp(i / N); s.y2 *= amp((i + 1) / N); }
     } }
 ];
@@ -577,7 +581,7 @@ const BIKES = [
   // noPot: potholes can't kick it. The survival machine — you won't podium, you WILL finish.
   { name: 'Third Wheel', kind: 'trike', tier: 3, col: '#7A2638', col2: '#E8D9A8', snd: 'hog', ts: 0.93, ac: 0.78, br: 0.92, hd: 0.55, hz: 0.9, tough: 1, armor: 3, noPot: true,
     bars: [0.38, 0.5, 0.4, 1, 0.9, 0.2], fl: "it's not a tricycle! It's a Hog!" },
-  { name: 'Vespa', kind: 'vespa', tier: 3, col: '#8FD4CC', col2: '#F4F4F0', snd: 'vespa', ts: 0.62, ac: 0.95, br: 1.6, hd: 1.45, hz: 0.45, tough: 0.6, armor: 0,
+  { name: 'Vespa', kind: 'vespa', tier: 3, col: '#8FD4CC', col2: '#F4F4F0', snd: 'vespa', ts: 0.62, ac: 0.95, br: 1.6, hd: 1.45, hz: 0.45, tough: 0.6, armor: 0, sp: 'espresso', wpad: -0.13,  // Tim, June 13: REALLY narrow hitbox (squeezes through anything) + Espresso special (toot-toot parts traffic + 0.5s power burst, recharges fast)
     bars: [0.3, 0.05, 1, 0.5, 0.45, 0.95], fl: 'La Dolce Vita!' },
   // The reward for beating the game — always the LAST tier-3 unlock (bikePoolNow
   // holds it back until every other bike is owned). Max everything, near-max terrain,

@@ -11,10 +11,11 @@ let crashing = false, crashTimer = 0, crashDur = 2, crashRot = 0, crashDir = 1, 
 let parts = [];
 let rivals = [], traffic = [];
 let keyL = false, keyR = false, keyB = false, keyU = false;
-let cheatBuf = '', cheatT = 0;
+let cheatBuf = '', cheatT = 0, helpFrom = 'title';
 let airT = 0, airDur = 0, jumpCd = 0, prevGrade = 0;     // jump physics (Dakar + crest launches)
 let boostOn = false, boostM = 1;                          // Volt "YIKES!" meter
 let sirenOn = false, sirenM = 1;                          // Police siren meter (parts traffic)
+let espM = 1, espT = 0;                                    // Vespa Espresso: charge meter (espM) + active-burst timer (espT)
 let steamP = 0;                                           // Steampunk boiler pressure (seconds of stoking)
 let newBike = -1, newBikeT = 0;                           // mystery-bike reveal toast
 const UPK = 154286;                                       // road units per displayed km
@@ -77,7 +78,7 @@ function reset() {
   speed = 0; position = 0; playerN = 0; raceT = 0; lapStartT = 0; curLap = 0; lapTimes = []; bgShift = 0; lastCd = 4; finalLapT = 0;
   crashing = false; crashTimer = 0; crashRot = 0; invulnT = 0; flashT = 0; bumpT = 0; lastBumpSeg = -1; fell = false; parts = []; conf = [];
   armorLeft = B().armor; staggerT = 0;
-  airT = 0; airDur = 0; jumpCd = 0; prevGrade = 0; boostOn = false; boostM = 1; sirenOn = false; sirenM = 1; steamP = 0;
+  airT = 0; airDur = 0; jumpCd = 0; prevGrade = 0; boostOn = false; boostM = 1; sirenOn = false; sirenM = 1; steamP = 0; espM = 1; espT = 0;
   rivals = []; traffic = [];
   const rGap = T.p2p ? 3600 : trackLen * 0.03;
   // Difficulty by track tier: tier-1 start tracks (0-3) baseline, tier-2 reward tracks
@@ -138,7 +139,7 @@ function reset() {
     // allOnc: every vehicle oncoming, but spread across all three lanes like a
     // one-way road (no separated streams) — the third traffic mode.
     const off = stopped ? 0.62
-      : T.allOnc ? [-0.5, 0, 0.5][i % 3]
+      : T.allOnc ? (i % 5 === 2 ? (i % 2 ? 0.82 : -0.82) : [-0.5, 0, 0.5][i % 3])
       : T.oncoming ? (onc ? -1 : 1) * (0.25 + (i % 2) * 0.3)
       : [-0.5, 0, 0.5][i % 3];
     traffic.push({
@@ -153,11 +154,12 @@ function reset() {
   // traffic merges right while it's in the zone.
   if (T.oncZone) {
     const z0 = trackLen * T.oncZone[0], z1 = trackLen * T.oncZone[1];
-    for (let i = 0; i < 6; i++) {
+    const zoneN = 11;   // up from 6: cars now respawn out at the horizon (no mid-road pop-in), so more are needed to hold the gauntlet's ORIGINAL density (~110 crossings), not increase it
+    for (let i = 0; i < zoneN; i++) {
       const ty = i % 3 === 2 ? 'truck' : 'car';
       const off = -(0.25 + (i % 2) * 0.3);
       traffic.push({
-        z: z0 + (z1 - z0) * (i + 0.5) / 6, off: off, base: off, dir: -1, stopped: false, zn: true,
+        z: z0 + (z1 - z0) * (i + 0.5) / zoneN, off: off, base: off, dir: -1, stopped: false, zn: true,
         speed: maxSpeed * 0.26, type: ty, col: tc[(i * 3 + 1) % 10], cw: ty === 'car' ? 0.26 : 0.27
       });
     }
@@ -205,15 +207,27 @@ function buildRewards() {
   selR = 0;
 }
 function claimReward(o) {
+  let gotBike = false;
   if (o) {
     if (o.t === 'life') lives = Math.min(5, lives + 1);
     else if (o.t === 'mbike') {
       const bp = bikePoolNow();
-      if (bp) { const pick = bp.pool[Math.floor(Math.random() * bp.pool.length)]; owned.push(pick); newBike = pick; newBikeT = 5; }
+      if (bp) { const pick = bp.pool[Math.floor(Math.random() * bp.pool.length)]; owned.push(pick); newBike = pick; newBikeT = 5; gotBike = true; }
     }
     else unlockedT.push(o.k);
   }
-  pendingReward = false; state = 'ready'; saveCareer();
+  pendingReward = false;
+  // A new bike drops you into the Garage (selected) so you can try the new wheels;
+  // life / track rewards return to race select.
+  if (gotBike) { selG = owned.indexOf(newBike); state = 'garage'; } else state = 'ready';
+  saveCareer();
+}
+// Beat the game (podium the Coast Run): unlock every remaining bike, then head to the garage.
+function claimWin() {
+  let gained = false;
+  for (let i = 0; i < BIKES.length; i++) if (owned.indexOf(i) < 0) { owned.push(i); gained = true; }
+  saveCareer();
+  if (gained) { selG = 0; state = 'garage'; } else state = 'ready';
 }
 function moveSel(dir) {
   do { sel = (sel + dir + THEMES.length) % THEMES.length; } while (unlockedT.indexOf(sel) < 0);
@@ -234,11 +248,14 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyQ' && (state === 'garage' || state === 'ready' || state === 'race' || state === 'count')) {
     paused = false; crashing = false; speed = 0; saveCareer(); state = 'title'; return;
   }
+  // How to Play — reachable from any non-race screen; any key returns to where you opened it.
+  if (e.code === 'KeyH' && (state === 'title' || state === 'ready' || state === 'garage')) { helpFrom = state; state = 'help'; e.preventDefault(); return; }
+  if (state === 'help') { state = helpFrom || 'title'; e.preventDefault(); return; }
   if (state === 'ready') {
     if (e.code === 'ArrowLeft') { moveSel(-1); e.preventDefault(); return; }
     if (e.code === 'ArrowRight') { moveSel(1); e.preventDefault(); return; }
     if (e.code === 'KeyR') { resetCareer(); buildCourse(sel); reset(); return; }
-    if (e.code === 'KeyB') { state = 'garage'; e.preventDefault(); return; }
+    if (e.code === 'KeyG') { state = 'garage'; e.preventDefault(); return; }
   }
   if (state === 'garage') {
     if (e.code === 'ArrowLeft') { selG = (selG + owned.length - 1) % owned.length; e.preventDefault(); return; }
@@ -262,6 +279,10 @@ addEventListener('keydown', e => {
       airDur = 0.8 + speed / maxSpeed * 0.55; airT = airDur; jumpCd = 1.4;
       try { note(300, 0, 0.16, 'triangle', 0.12); } catch (er) { }
     }
+    else if (spc === 'espresso' && espT <= 0 && espM >= 1) {
+      espT = 0.5; espM = 0;   // instant burst, fully depletes; recharges at 2x the siren rate
+      try { note(760, 0, 0.09, 'square', 0.13); note(760, 0.13, 0.09, 'square', 0.13); } catch (er) { }   // toot-toot
+    }
     e.preventDefault(); return;
   }
   if (e.code === 'Enter' || e.code === 'Space') {
@@ -270,6 +291,7 @@ addEventListener('keydown', e => {
     else if (state === 'garage') { curBike = owned[selG]; saveCareer(); state = 'ready'; }
     else if (state === 'over') { state = pendingReward ? 'reward' : 'ready'; }
     else if (state === 'reward') { claimReward(rewardOpts[selR]); }
+    else if (state === 'won') { claimWin(); }
     else if (state === 'dead') { resetCareer(); state = 'ready'; buildCourse(sel); reset(); }
     e.preventDefault();
   }
@@ -286,6 +308,8 @@ cv.addEventListener('click', e => {
   const r = cv.getBoundingClientRect();
   const mx = (e.clientX - r.left) * W / r.width, my = (e.clientY - r.top) * H / r.height;
   if (state === 'title') { state = 'garage'; selG = owned.indexOf(curBike); if (selG < 0) selG = 0; initAudio(); return; }
+  if (state === 'help') { state = helpFrom || 'title'; return; }
+  if (state === 'won') { claimWin(); return; }
   if (state === 'over') { state = pendingReward ? 'reward' : 'ready'; return; }
   if (state === 'dead') { resetCareer(); state = 'ready'; buildCourse(sel); reset(); return; }
   if (state === 'ready') {
@@ -348,7 +372,7 @@ function rivalBlocker(r, lane, look, wid) {
     const d = relZ(t.z - r.z);
     // Oncoming traffic registers LATE (45% off the look-ahead) — closing speeds are
     // brutal and the rivals shouldn't thread two-way traffic any better than Tim does.
-    if (t.dir === -1 && d >= look * 0.55) continue;
+    if (t.dir === -1 && d >= look * (T.coastrun ? 1 : 0.55)) continue;   // Final Boss rivals get FULL oncoming vision — they navigate the desert leg instead of wiping out in it
     if (d <= segLen * 0.2 || d >= bd) continue;
     const tsp = t.dir === -1 ? -t.speed : t.speed;
     if (r.speed - tsp < -200) continue;
@@ -435,8 +459,8 @@ function rivalDrive(r, dt) {
     const tsp = t.dir === -1 ? -t.speed : t.speed;
     const closing = r.speed - tsp;
     if (Math.abs(d) < segLen * 0.5 && Math.abs(r.off - t.off) < t.cw && closing > 300) {
-      if (t.dir === -1 || closing > 2400 || Math.random() > r.skill + (wet ? 0.18 : 0.32)) { r.spillDur = 1.5 + Math.random() * 0.9; r.spillT = r.spillDur; }
-      else { r.stumbleT = 1; r.speed = Math.max(0, tsp * 0.8); }
+      if ((t.dir === -1 && !T.coastrun) || closing > (T.coastrun ? 4200 : 2400) || Math.random() > r.skill + (wet ? 0.18 : T.coastrun ? 0.62 : 0.32)) { r.spillDur = 1.5 + Math.random() * 0.9; r.spillT = r.spillDur; }
+      else { r.stumbleT = T.coastrun ? 0.5 : 1; r.speed = Math.max(T.coastrun ? r.speed * 0.8 : 0, tsp * 0.8); }   // Final Boss riders bump through traffic instead of pinballing off it
       r.hitCd = 1; r.follow = null; r.decT = 0;
       return;
     }
@@ -501,7 +525,8 @@ function finishRace() {
   const all = [{ col: '#E24B4A', me: true, p: position }].concat(rivals.map(r => ({ col: r.col, me: false, p: r.z })));
   all.sort((a, b) => b.p - a.p);
   podiumCols = all.slice(0, 3);
-  if (finalRank <= 3) { buildRewards(); pendingReward = rewardOpts.length > 0; winJingle(); }
+  if (T.coastrun && finalRank <= 3) { state = 'won'; winJingle(); }   // beat the game — claimWin() unlocks all bikes
+  else if (finalRank <= 3) { buildRewards(); pendingReward = rewardOpts.length > 0; winJingle(); }
   else { pendingReward = false; loseJingle(); }
   saveCareer();
 }
@@ -518,7 +543,7 @@ function update(dt) {
   if (staggerT > 0) staggerT -= dt;
   for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 480 * dt; }
   parts = parts.filter(p => p.life > 0);
-  if (state === 'over' && finalRank <= 3) {
+  if ((state === 'over' && finalRank <= 3) || state === 'won') {
     if (conf.length < 130) for (let i = 0; i < 2; i++) conf.push({ x: Math.random() * W, y: -10, vy: 60 + Math.random() * 70, vx: (Math.random() - 0.5) * 30, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 7, col: colors[Math.floor(Math.random() * colors.length)] });
     for (const c of conf) { c.y += c.vy * dt; c.x += c.vx * dt + Math.sin(c.y * 0.04) * 0.7; c.rot += c.vr * dt; if (c.y > H + 12) { c.y = -10; c.x = Math.random() * W; } }
   }
@@ -532,7 +557,7 @@ function update(dt) {
     raceT += dt;
     if (invulnT > 0) invulnT -= dt;
     const bk = B();
-    const wpad = bk.wide ? 0.07 : 0;   // Dune Buggy: wider hitbox against everything
+    const wpad = bk.wpad || 0;   // per-bike hitbox width: the Vespa is REALLY narrow (negative wpad) and squeezes through gaps. Collision windows below clamp to a small floor so it's never invincible. (The old Dune Buggy 'wide' flag is retired.)
     if (crashing) {
       crashTimer -= dt;
       crashRot = Math.min(crashRot + dt * 5, 1.6);
@@ -576,6 +601,8 @@ function update(dt) {
       else if (bk.sp === 'boost') boostM = Math.min(1, boostM + dt / 12);
       if (sirenOn) { sirenM -= dt / 5; if (sirenM <= 0) { sirenM = 0; sirenOn = false; } }
       else if (bk.sp === 'siren') sirenM = Math.min(1, sirenM + dt / 11);
+      if (espT > 0) espT -= dt;                                                          // Espresso burst counts down
+      else if (bk.sp === 'espresso' && espM < 1) espM = Math.min(1, espM + dt / 5.5);    // recharge at 2x the siren's rate (dt/11)
       // Steampunk boiler: pressure builds while stoking (throttle, no brake). No cap —
       // the top-speed bonus below grows without limit. Braking/crashing dumps it all.
       // Stokes fast (x1.6) and pays out big now — a long no-brake run gets terrifying.
@@ -605,14 +632,15 @@ function update(dt) {
       // curve-push both scale with speed, so reacting to the road in time stops
       // being possible — per Tim: "It needs to be a bad idea."
       if (boostOn) { topS *= 4; acm *= 8; }
+      if (espT > 0) { topS *= 1.38; acm *= 5; }   // Espresso: brief surge, capped ~150 mph (Tim: 256 was uncontrollable) — enough to blast the slow Vespa out of a jam
       if (bk.sp === 'steam') { topS *= 1 + steamP * 0.07; acm *= 1 + Math.min(1, steamP * 0.05); }   // +7% top speed per pressure unit, unbounded
       const cap = onGrass ? grassMax * (0.7 + bk.hz * 0.9) : topS;
       if (keyU && speed < cap) speed += accel * acm * dt * Math.max(0.15, 1 - speed / cap);
       // YIKES delivery is exponential, not gradual: ~90% of the gap to quad-Duke
       // speed arrives within a second of pressing the button. An unusable amount
       // of speed, almost instantly — per Tim's spec.
-      if (boostOn && speed < cap) speed += (cap - speed) * Math.min(1, dt * 2.2);
-      else if (!keyU && !boostOn) speed = Math.max(0, speed - (1500 + speed * 0.15) * dt);
+      if ((boostOn || espT > 0) && speed < cap) speed += (cap - speed) * Math.min(1, dt * 2.6);
+      else if (!keyU && !boostOn && espT <= 0) speed = Math.max(0, speed - (1500 + speed * 0.15) * dt);
       if (speed > cap) speed = Math.max(cap, speed - 9000 * dt);
       // Rain is a real event now: brakes at half strength, steering 30% duller —
       // and the same misery hits the rivals (see rivalDrive), so it's fair.
@@ -665,7 +693,7 @@ function update(dt) {
                 playerN += kd * (0.24 + Math.random() * 0.18) * (1.15 - bk.hz);
                 lean += kd * 0.8 * (1.15 - bk.hz);
               }
-            } else if (a && !a.hit && speed > 1500 && Math.abs(playerN - a.o) < (a.t === 'cow' ? 0.23 : a.t === 'guard' ? 0.16 : 0.19) + wpad) {
+            } else if (a && !a.hit && speed > 1500 && Math.abs(playerN - a.o) < Math.max(0.04, (a.t === 'cow' ? 0.23 : a.t === 'guard' ? 0.16 : 0.19) + wpad)) {
               a.hit = true; hitHard(playerN < a.o ? -1 : 1); break;
             }
             if (!ts.spr) continue;
@@ -676,7 +704,7 @@ function update(dt) {
               }
             } else {
               const tw = ty === 'sign' ? 0.14 : ty === 'rock' ? 0.19 : ty === 'cactus' ? 0.15 : ty === 'cactus2' ? 0.16 : ty === 'barrel' ? 0.12 : ty === 'lamp' ? 0.1 : 0.17;
-              if (Math.abs(playerN - ts.spr.o) < tw + wpad) { hitHard(playerN > 0 ? -1 : 1); break; }
+              if (Math.abs(playerN - ts.spr.o) < Math.max(0.035, tw + wpad)) { hitHard(playerN > 0 ? -1 : 1); break; }
             }
           }
         }
@@ -684,6 +712,7 @@ function update(dt) {
     }
     for (const r of rivals) rivalDrive(r, dt);
     const sirening = sirenOn && bk.sp === 'siren';
+    const tooting = espT > 0 && bk.sp === 'espresso';   // Espresso horn briefly parts traffic, like a quick local siren
     for (const t of traffic) {
       t.z += t.speed * (t.dir || 1) * dt;
       // On endless oncoming tracks (Wrong Way Express), recycle traffic that falls well
@@ -695,10 +724,10 @@ function update(dt) {
         const rel = t.z - position;
         if (rel < -segLen * 6) {
           const gap = t.dir === -1 ? (T.oncGap || 1) : 1;
-          t.z = position + segLen * (45 + Math.floor(Math.random() * 70)) * gap;
+          t.z = position + segLen * Math.max(drawN + 6 + Math.floor(Math.random() * 70), (45 + Math.floor(Math.random() * 70)) * gap);   // never respawn inside the visible road — cars enter at the horizon, not mid-road
           // keep it on its own side of the road (oncoming left, with-traffic right);
           // stopped school buses reappear parked on the shoulder again
-          t.base = t.stopped ? 0.62 : T.allOnc ? [-0.5, 0, 0.5][Math.floor(Math.random() * 3)] : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
+          t.base = t.stopped ? 0.62 : T.allOnc ? (Math.random() < 0.2 ? (Math.random() < 0.5 ? -0.82 : 0.82) : [-0.5, 0, 0.5][Math.floor(Math.random() * 3)]) : (t.dir === -1 ? -1 : 1) * (0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
           if (t.dir === -1) rerollOncoming(t);
         }
       }
@@ -709,7 +738,7 @@ function update(dt) {
       if (t.zn) {
         const z0 = trackLen * T.oncZone[0], z1 = trackLen * T.oncZone[1];
         if (t.z < z0 - segLen * 4 || t.z < position - segLen * 6) {
-          const tgt = position > z0 ? position + segLen * (45 + Math.floor(Math.random() * 70)) : z1 - Math.random() * (z1 - z0) * 0.5;
+          const tgt = position > z0 ? position + segLen * (drawN + 6 + Math.floor(Math.random() * 60)) : z1 - Math.random() * (z1 - z0) * 0.5;   // respawn out at the horizon, not mid-road
           if (tgt < z1 - segLen * 2) {
             t.z = tgt; t.base = -(0.25 + (Math.random() < 0.5 ? 0 : 0.3)); t.off = t.base;
             rerollOncoming(t);
@@ -725,11 +754,11 @@ function update(dt) {
       }
       // Police siren: traffic pulls clear OFF the road, way down the line — by the
       // time you arrive at speed the lanes are empty. (Parked school buses stay put.)
-      if (bk.sp === 'siren' && !t.stopped) {
+      if ((bk.sp === 'siren' || tooting) && !t.stopped) {
         const dz = ((t.z - position) % trackLen + trackLen) % trackLen;
-        const inRange = sirening && dz < segLen * 110;
+        const inRange = (sirening && dz < segLen * 110) || (tooting && dz < segLen * 75);
         const tgt = inRange ? (t.off >= playerN ? 1.38 : -1.38) : tb;
-        t.off += (tgt - t.off) * Math.min(1, dt * 4);
+        t.off += (tgt - t.off) * Math.min(1, dt * (tooting ? 7 : 4));
       } else if (tb !== t.base || (T.oncZone && t.dir === 1 && Math.abs(t.off - t.base) > 0.01)) {
         t.off += (tb - t.off) * Math.min(1, dt * 1.4);
       }
@@ -743,7 +772,7 @@ function update(dt) {
         // widen the window by the distance closed per frame so a fast approach can't
         // tunnel straight through the hitbox between frames
         const win = segLen * 0.55 + Math.max(0, closing) * dt * 1.2;
-        if (Math.abs(d) < win && Math.abs(playerN - r.off) < 0.17 + wpad) {
+        if (Math.abs(d) < win && Math.abs(playerN - r.off) < Math.max(0.045, 0.17 + wpad)) {
           if (d > 0 && closing > 1800 && Math.abs(playerN - r.off) < 0.11) {
             // slammed square into their tail at speed — that's a real crash
             r.stumbleT = 1; r.speed *= 0.85; r.bumpCd = 1;
@@ -772,7 +801,7 @@ function update(dt) {
         if (!T.p2p) dz = ((dz % trackLen) + trackLen) % trackLen;
         const win = onc ? closing * dt + segLen * 0.45 : segLen * 0.6;
         const lo = onc ? -segLen * 0.3 : 0;
-        const latW = (onc ? t.cw * 0.78 : t.cw) + wpad;
+        const latW = Math.max(0.05, (onc ? t.cw * 0.78 : t.cw) + wpad);
         if (dz > lo && dz < win && Math.abs(playerN - t.off) < latW) {
           hitHard(playerN < t.off ? -1 : 1); break;
         }
@@ -867,7 +896,7 @@ function render() {
     if (vis) clip = p2.y;
   }
   const farS = segs[(base + drawN - 1) % N];
-  cx.fillStyle = (farS.clf || farS.clfR) ? '#26648E' : farS.cA;
+  cx.fillStyle = (farS.clf || farS.clfR) ? (nightNow ? '#13314a' : '#26648E') : farS.cA;
   cx.fillRect(-10, H * 0.52, W + 20, H * 0.48 + 10);
   for (let n = drawN - 1; n >= 1; n--) {
     const d = sd[n]; if (!d.vis) continue;
@@ -1104,6 +1133,13 @@ function drawHud() {
       cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.fillRect(118, H - 66, 36, 10);
       cx.fillStyle = steamP > 8 ? '#E24B4A' : steamP > 4 ? '#FAC775' : '#9FE1CB';
       cx.fillRect(118, H - 66, 36 * Math.min(1, steamP / 12), 10);
+    } else if (B().sp === 'espresso') {
+      cx.fillStyle = 'rgba(20,24,32,0.72)'; rr(12, H - 74, 150, 26, 8); cx.fill();
+      const rdy = espM >= 1;
+      cx.fillStyle = espT > 0 ? '#E8B06A' : rdy ? '#C77B3A' : '#fff'; cx.font = '500 11px monospace';
+      cx.fillText(espT > 0 ? 'ESPRESSO!!' : rdy ? 'ESPRESSO (space)' : 'brewing...', 24, H - 61);
+      cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.fillRect(118, H - 66, 36, 10);
+      cx.fillStyle = rdy ? '#E8B06A' : '#9C6B3A'; cx.fillRect(118, H - 66, 36 * espM, 10);
     }
     if (muted) {
       const my2 = B().sp ? H - 104 : H - 74;
@@ -1156,6 +1192,8 @@ function drawHud() {
       cx.fillStyle = '#FAC775'; cx.font = '500 18px monospace';
       cx.fillText('PRESS ENTER TO START', W / 2, H * 0.86);
     }
+    cx.fillStyle = '#8a8f99'; cx.font = '12px monospace';
+    cx.fillText('press H — how to play', W / 2, H * 0.94);
   }
   if (state === 'ready') {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
@@ -1181,10 +1219,10 @@ function drawHud() {
     cx.fillStyle = '#fff'; cx.font = B().name.length > 17 ? '500 10px monospace' : '500 12px monospace';
     cx.fillText(B().name, 98, H - 54);
     cx.fillStyle = gPulse ? '#FAC775' : '#c9a14f'; cx.font = '500 11px monospace';
-    cx.fillText('press B to swap bikes', 98, H - 36);
+    cx.fillText('press G to swap bikes', 98, H - 36);
     cx.fillStyle = '#FAC775'; cx.font = '500 12px monospace'; cx.textAlign = 'right';
     cx.fillText('← → choose · enter: race', W - 20, H - 60);
-    cx.fillText('q: save & exit · any finish = +1 life', W - 20, H - 40);
+    cx.fillText('q: exit · h: how to play · any finish = +1 life', W - 20, H - 40);
     if (newBikeT > 0 && newBike >= 0) {
       cx.fillStyle = 'rgba(20,24,32,0.95)'; rr(W / 2 - 170, H / 2 - 80, 340, 160, 12); cx.fill();
       cx.strokeStyle = '#FAC775'; cx.lineWidth = 2; rr(W / 2 - 170, H / 2 - 80, 340, 160, 12); cx.stroke();
@@ -1201,7 +1239,7 @@ function drawHud() {
     cx.fillStyle = 'rgba(15,18,26,0.85)'; cx.fillRect(0, 0, W, H);
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
     cx.font = '500 22px monospace'; cx.fillText('Garage', W / 2, 26);
-    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('Pick your ride · enter: choose race · b: title · q: save & exit', W / 2, 45);
+    cx.font = '12px monospace'; cx.fillStyle = '#B4B2A9'; cx.fillText('enter: race · b: title · h: how to play · q: save & exit', W / 2, 45);
     // 5 columns × up to 3 rows (room for 15 bikes), all rows clear of the stats panel.
     for (let i = 0; i < owned.length; i++) {
       const bk = BIKES[owned[i]];
@@ -1270,6 +1308,45 @@ function drawHud() {
     cx.fillStyle = '#FAC775'; cx.font = '500 15px monospace';
     cx.fillText('← → choose · enter to claim', W / 2, H - 60);
   }
+  if (state === 'won') {
+    cx.fillStyle = 'rgba(15,18,26,0.9)'; cx.fillRect(0, 0, W, H);
+    cx.textAlign = 'center';
+    drawCup(W / 2, H * 0.34, 30);
+    cx.fillStyle = '#FAC775'; cx.font = '700 40px monospace';
+    cx.fillText('YOU WON!', W / 2, H * 0.5);
+    cx.fillStyle = '#fff'; cx.font = '500 16px monospace';
+    cx.fillText('Congratulations — you beat Coast Run GP!', W / 2, H * 0.6);
+    cx.font = '15px monospace';
+    cx.fillText("You're a great video game motorcycle racer!", W / 2, H * 0.67);
+    cx.fillStyle = '#9FE1CB'; cx.font = '500 13px monospace';
+    cx.fillText('Every bike unlocked — the whole garage is yours.', W / 2, H * 0.78);
+    cx.fillStyle = '#FAC775'; cx.font = '500 14px monospace';
+    cx.fillText('Click or press enter to continue', W / 2, H * 0.88);
+    for (const c of conf) { cx.save(); cx.translate(c.x, c.y); cx.rotate(c.rot); cx.fillStyle = c.col; cx.fillRect(-3, -2, 6, 4); cx.restore(); }
+  }
+  if (state === 'help') {
+    cx.fillStyle = 'rgba(15,18,26,0.94)'; cx.fillRect(0, 0, W, H);
+    cx.textAlign = 'center'; cx.fillStyle = '#fff'; cx.font = '500 22px monospace';
+    cx.fillText('How to Play', W / 2, 32);
+    cx.textAlign = 'left';
+    const lx = 92; let ly = 66;
+    const HL = t => { cx.fillStyle = '#FAC775'; cx.font = '600 13px monospace'; cx.fillText(t, lx, ly); ly += 21; };
+    const L = t => { cx.fillStyle = '#cfcdc4'; cx.font = '13px monospace'; cx.fillText(t, lx, ly); ly += 19; };
+    HL('CONTROLS');
+    L('← →   steer        ↑  throttle        ↓  brake');
+    L("Space   your bike's special ability (when it has one)");
+    L('P   pause      Q   save & quit      Enter   confirm');
+    ly += 12; HL('REWARDS');
+    L('Finish in the top 3 of your race to get a reward. Depending');
+    L("on what's going on, that could be a choice of an extra life,");
+    L('another bike to add to your garage, or it could unlock the');
+    L('next race.');
+    ly += 14; cx.fillStyle = '#9FE1CB'; cx.font = '13px monospace';
+    cx.fillText('If a race is too tough, try it with a better bike —', lx, ly); ly += 19;
+    cx.fillText('or just try harder!', lx, ly);
+    cx.textAlign = 'center'; cx.fillStyle = '#FAC775'; cx.font = '500 13px monospace';
+    cx.fillText('press any key to go back', W / 2, H - 14);
+  }
   if (state === 'over' && finalRank <= 3) {
     cx.fillStyle = 'rgba(20,24,32,0.82)'; rr(W / 2 - 230, H * 0.08, 460, H * 0.84, 14); cx.fill();
     cx.textAlign = 'center'; cx.fillStyle = '#fff';
@@ -1306,11 +1383,14 @@ function drawHud() {
     cx.fillText(state === 'dead' ? 'Wrecked!' : 'Race complete', W / 2, H * 0.27);
     cx.font = '15px monospace';
     if (state === 'dead') {
-      cx.fillText(T.p2p ? 'You ran out of lives ' + (position / UPM).toFixed(1) + 'mi into ' + T.name + '.' : 'You ran out of lives on lap ' + Math.min(curLap + 1, 3) + ' of ' + T.name + '.', W / 2, H * 0.38);
-      cx.fillText('Time on track: ' + fmt(raceT), W / 2, H * 0.45);
-      cx.fillStyle = '#F0997B'; cx.fillText('Career over — garage, tracks and lives reset', W / 2, H * 0.52);
+      cx.fillStyle = '#E24B4A'; cx.font = '700 46px monospace';
+      cx.fillText('TOO BAD!', W / 2, H * 0.38);
+      cx.fillStyle = '#fff'; cx.font = '15px monospace';
+      cx.fillText(T.p2p ? 'You ran out of lives ' + (position / UPM).toFixed(1) + 'mi into ' + T.name + '.' : 'You ran out of lives on lap ' + Math.min(curLap + 1, 3) + ' of ' + T.name + '.', W / 2, H * 0.47);
+      cx.fillText('Time on track: ' + fmt(raceT), W / 2, H * 0.53);
+      cx.fillStyle = '#F0997B'; cx.fillText('Career over — garage, tracks and lives reset', W / 2, H * 0.59);
       cx.fillStyle = '#FAC775'; cx.font = '500 17px monospace';
-      cx.fillText('Click or press enter — fresh start, cafe racer, 3 lives', W / 2, H * 0.64);
+      cx.fillText('Click or press enter — fresh start, cafe racer, 3 lives', W / 2, H * 0.67);
     } else {
       cx.fillText('Final position: ' + finalRank + ' of 13 on ' + T.name, W / 2, H * 0.39);
       cx.fillText('Total ' + fmt(raceT) + (lapTimes.length ? ' · best lap ' + fmt(Math.min.apply(null, lapTimes)) : ''), W / 2, H * 0.46);
